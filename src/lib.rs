@@ -102,19 +102,24 @@ impl Scribe {
         }
     }
 
+    /// Create a new Scribe from a YAML file.
     pub fn from_yaml(path: &str) -> Result<Self, Error> {
         let f = File::open(path)?;
         serde_yaml::from_reader(f).map_err(Into::into)
     }
 
+    /// Create and return a new Cognate.
     pub fn cognate(&mut self, name: &str) -> &mut Cognate {
-        self.cognates.entry(name.to_string()).or_insert_with(|| Cognate::new(name))
+        self.cognates.entry(name.to_string())
+                     .or_insert_with(|| Cognate::new(name))
     }
 
+    /// Insert a Cognate.
     pub fn insert_cognate(&mut self, cognate: Cognate) {
         self.cognates.insert(cognate.name.to_string(), cognate);
     }
 
+    /// Select a template from a named Cognate using the passed Context.
     fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, Error> {
         match self.cognates.get(name) {
             Some(cognate) => {
@@ -129,8 +134,8 @@ impl Scribe {
                     return Err(AnnalsFailure::NoSuitableGroups{context}.into());
                 }
                 let mut templates = GroupListIter::new(groups);
-                let max = templates.size;
-                match templates.nth(thread_rng().gen_range(0, max)) {
+                let index = thread_rng().gen_range(0, templates.size);
+                match templates.nth(index) {
                     Some(template) => {
                         context.merge_from_group(template.1);
                         Ok(template.0)
@@ -144,6 +149,7 @@ impl Scribe {
         }
     }
 
+    /// Expand an iterator over a sequence of Tokens into a String.
     #[inline]
     fn expand_tokens(&self, tokens: Iter<Token>, context: &mut Context) -> Result<String, Error> {
         let expan = tokens
@@ -152,6 +158,7 @@ impl Scribe {
         Ok(expan.join(""))
     }
 
+    /// Recursively expand a token to a String.
     fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, Error> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
@@ -164,20 +171,29 @@ impl Scribe {
         }
     }
 
+    /// Generate text from a named Cognate.
     pub fn gen(&self, cognate: &str) -> Result<String, Error> {
         let mut context = Context::new();
         let template = self.select_template(cognate, &mut context)?;
         self.expand_tokens(template.iter(), &mut context)
     }
 
+    /// Generate text from a named Cognate using the passed Context.
     pub fn gen_with(&self, cognate: &str, mut context: Context) -> Result<String, Error> {
         let template = self.select_template(cognate, &mut context)?;
         self.expand_tokens(template.iter(), &mut context)
     }
 
-    pub fn gen_from(&self, template: &str) -> Result<String, Error> {
+    /// Generate text from the passed template string.
+    pub fn expand(&self, template: &str) -> Result<String, Error> {
         let tmp = Template::from_string(template.to_owned())?;
         let mut context = Context::new();
+        self.expand_tokens(tmp.iter(), &mut context)
+    }
+
+    /// Generate text from the passed template string and Context.
+    pub fn expand_with(&self, template: &str, mut context: Context) -> Result<String, Error> {
+        let tmp = Template::from_string(template.to_owned())?;
         self.expand_tokens(tmp.iter(), &mut context)
     }
 
@@ -191,13 +207,13 @@ impl Scribe {
         Ok(())
     }
 
-    /// Save
+    /// Save this Scribe to a YAML file.
     pub fn save(&self, path: &str) -> Result<(), Error> {
         let f = File::create(path)?;
         serde_yaml::to_writer(f, &self).map_err(Into::into)
     }
 
-    /// Save stored cognates to a YAML file.
+    /// Save this Scribe's Cognates to a YAML file.
     pub fn save_cognates(&self, path: &str) -> Result<(), Error> {
         let f = File::create(path)?;
         let cognates : Vec<&Cognate> = self.cognates.values().collect();
