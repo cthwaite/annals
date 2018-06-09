@@ -65,7 +65,7 @@ impl Template {
 
 
 pub mod template_list {
-    use super::*;
+    use super::Template;
 
     use serde::de::{Deserialize, Deserializer};
     use serde::ser::{Serializer, SerializeSeq};
