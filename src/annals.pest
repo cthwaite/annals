@@ -1,0 +1,24 @@
+template = _{ soi ~ (tag|literal)+ ~ eoi }
+
+literal = { whitespace* ~ (char | symbol | escape | quote | digit)+ ~ whitespace* }
+
+tag = _{ "<" ~ expan ~ ">" }
+expan = _{ (property) }
+// Property - bare-ident. Can refer to another expan.
+property = { ident }
+
+ident = @{ char ~ (char | digit | "_" )* }
+
+escape     = _{ "\\" ~ (predefined | byte | unicode) }
+predefined = _{ "n" | "r" | "t" | "\\" | "0" | "\"" | "'" }
+byte       = _{ "x" ~ hex ~ hex }
+unicode    = _{ "u" ~ "{" ~ unicode_hex ~ "}" }
+quote = _{ "'" | "\"" }
+
+unicode_hex = { hex ~ hex ~ hex ~ hex ~ hex ~ hex | hex+ }
+hex = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
+
+symbol = _{ "!" | "?" | "," | "." | "_" }
+char = _{ 'a'..'z' | 'A'..'Z' }
+digit = _{ '0'..'9' }
+whitespace = _{ " " | "\r" | "\t" | "\n" }
