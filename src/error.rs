@@ -16,6 +16,9 @@ pub enum AnnalsFailure {
     #[fail(display = "No suitable groups in context: {}", context)]
     NoSuitableGroups {
         context: String
+    },
+    #[fail(display = "Unknown token: {}", content)]
+    UnknownToken {
+        content: String,
     }
-
 }

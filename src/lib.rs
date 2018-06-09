@@ -39,17 +39,20 @@ impl Cognate {
         }
     }
 
+    /// Create a new Cognate from a YAML file.
     pub fn from_yaml(path: &str) -> Result<Self, Error> {
         let f = File::open(path)?;
         serde_yaml::from_reader(f).map_err(Into::into)
     }
 
+    /// Create a new group from the passed slice of Templates.
     pub fn group_from_templates<T: AsRef<str>>(&mut self, templates: &[T]) -> Result<(), Error> {
         let grp = Group::from_templates(templates)?;
         self.groups.push(grp);
         Ok(())
     }
 
+    /// Add a new Group to this Cognate.
     pub fn add_group(&mut self) -> Option<&mut Group> {
         self.groups.push(Group::new());
         self.groups.last_mut()
@@ -67,16 +70,19 @@ impl Context {
         }
     }
 
+    /// Merge tags from a Group into this context.
     pub fn merge_from_group(&mut self, group: &Group) {
         for (key, value) in &group.tags {
             self.tags.insert(key.to_string(), value.to_string());
         }
     }
 
+    /// Set the value of a tag.
     pub fn set<T: AsRef<str>>(&mut self, key: T, value: T) {
         self.tags.insert(key.as_ref().to_string(), value.as_ref().to_string());
     }
 
+    /// Check if a group's tags match the tags in this Context.
     pub fn accept(&self, group: &Group) -> bool {
         if self.tags.is_empty() || group.tags.is_empty() {
             return true;
@@ -94,6 +100,7 @@ pub struct Scribe {
     filters: Vec<String>,
     cognates: HashMap<String, Cognate>,
 }
+
 impl Scribe {
     pub fn new() -> Self {
         Scribe {
@@ -117,58 +124,6 @@ impl Scribe {
     /// Insert a Cognate.
     pub fn insert_cognate(&mut self, cognate: Cognate) {
         self.cognates.insert(cognate.name.to_string(), cognate);
-    }
-
-    /// Select a template from a named Cognate using the passed Context.
-    fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, Error> {
-        match self.cognates.get(name) {
-            Some(cognate) => {
-                if cognate.groups.is_empty() {
-                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
-                }
-                let groups = cognate.groups.iter()
-                                            .filter(|grp| context.accept(grp))
-                                            .collect::<Vec<_>>();
-                if groups.is_empty() {
-                    let context = format!("{:?}", context.tags);
-                    return Err(AnnalsFailure::NoSuitableGroups{context}.into());
-                }
-                let mut templates = GroupListIter::new(groups);
-                let index = thread_rng().gen_range(0, templates.size);
-                match templates.nth(index) {
-                    Some(template) => {
-                        context.merge_from_group(template.1);
-                        Ok(template.0)
-                    },
-                    None => {
-                        Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into())
-                    }
-                }
-            },
-            None => Err(AnnalsFailure::UnknownCognate{name: name.to_string()}.into())
-        }
-    }
-
-    /// Expand an iterator over a sequence of Tokens into a String.
-    #[inline]
-    fn expand_tokens(&self, tokens: Iter<Token>, context: &mut Context) -> Result<String, Error> {
-        let expan = tokens
-                        .map(|tok| self.handle_token(tok, context))
-                        .collect::<Result<Vec<String>, Error>>()?;
-        Ok(expan.join(""))
-    }
-
-    /// Recursively expand a token to a String.
-    fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, Error> {
-        match token {
-            Token::Literal(text) => Ok(text.clone()),
-            Token::Property(tokens) => self.expand_tokens(tokens.iter(), context),
-            Token::Ident(name) => {
-                let temp = self.select_template(name, context)?;
-                self.expand_tokens(temp.iter(), context)
-            },
-            Token::Unknown(_) => Ok("???".to_owned())
-        }
     }
 
     /// Generate text from a named Cognate.
@@ -218,5 +173,56 @@ impl Scribe {
         let f = File::create(path)?;
         let cognates : Vec<&Cognate> = self.cognates.values().collect();
         serde_yaml::to_writer(f, &cognates).map_err(Into::into)
+    }
+    /// Select a template from a named Cognate using the passed Context.
+    fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, Error> {
+        match self.cognates.get(name) {
+            Some(cognate) => {
+                if cognate.groups.is_empty() {
+                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
+                }
+                let groups = cognate.groups.iter()
+                                            .filter(|grp| context.accept(grp))
+                                            .collect::<Vec<_>>();
+                if groups.is_empty() {
+                    let context = format!("{:?}", context.tags);
+                    return Err(AnnalsFailure::NoSuitableGroups{context}.into());
+                }
+                let mut templates = GroupListIter::new(groups);
+                let index = thread_rng().gen_range(0, templates.size);
+                match templates.nth(index) {
+                    Some(template) => {
+                        context.merge_from_group(template.1);
+                        Ok(template.0)
+                    },
+                    None => {
+                        Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into())
+                    }
+                }
+            },
+            None => Err(AnnalsFailure::UnknownCognate{name: name.to_string()}.into())
+        }
+    }
+
+    /// Expand an iterator over a sequence of Tokens into a String.
+    #[inline]
+    fn expand_tokens(&self, tokens: Iter<Token>, context: &mut Context) -> Result<String, Error> {
+        let expan = tokens
+                        .map(|tok| self.handle_token(tok, context))
+                        .collect::<Result<Vec<String>, Error>>()?;
+        Ok(expan.join(""))
+    }
+
+    /// Recursively expand a token to a String.
+    fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, Error> {
+        match token {
+            Token::Literal(text) => Ok(text.clone()),
+            Token::Property(tokens) => self.expand_tokens(tokens.iter(), context),
+            Token::Ident(name) => {
+                let temp = self.select_template(name, context)?;
+                self.expand_tokens(temp.iter(), context)
+            },
+            Token::Unknown(content) => Err(AnnalsFailure::UnknownToken{ content: content.to_string() }.into())
+        }
     }
 }
