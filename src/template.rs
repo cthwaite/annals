@@ -90,9 +90,6 @@ pub mod template_list {
 }
 
 mod test {
-    use super::*;
-
-
     #[test]
     fn test_template_valid() {
         macro_rules! good_template {

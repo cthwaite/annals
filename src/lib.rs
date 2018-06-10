@@ -59,6 +59,7 @@ impl Cognate {
     }
 }
 
+#[derive(Default)]
 pub struct Context {
     pub tags: HashMap<String, String>
 }
@@ -95,7 +96,7 @@ impl Context {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Scribe {
     filters: Vec<String>,
     cognates: HashMap<String, Cognate>,

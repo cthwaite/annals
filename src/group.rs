@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use template::{Template, template_list};
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Group {
     #[serde(default)]
     pub tags: HashMap<String, String>,

@@ -1,5 +1,5 @@
 #[cfg(debug_assertions)]
-const _GRAMMAR: &'static str = include_str!("annals.pest");
+const _GRAMMAR: &str = include_str!("annals.pest");
 
 #[derive(Parser)]
 #[grammar = "annals.pest"]
@@ -8,7 +8,7 @@ pub struct AnnalsParser;
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::AnnalsParser;
 
     #[test]
     fn simplest_template_property() {
