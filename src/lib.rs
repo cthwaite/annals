@@ -14,6 +14,7 @@ use rand::prelude::*;
 use std::collections::HashMap;
 use std::fs::File;
 use std::slice::Iter;
+use std::str::FromStr;
 
 
 mod error;
@@ -131,11 +132,6 @@ impl Scribe {
     pub fn from(path: &str) -> Result<Self, Error> {
         let f = File::open(path)?;
         serde_yaml::from_reader(f).map_err(Into::into)
-    }
-
-    /// Create a new Scribe from a YAML string.
-    pub fn from_str(data: &str) -> Result<Self, Error> {
-        serde_yaml::from_str(data).map_err(Into::into)
     }
 
     /// Load a list of Cognates from a YAML file, inserting them into this Scribe.
@@ -266,8 +262,9 @@ impl Scribe {
                     context.bind(key, bind);
                 }
                 let ret = self.expand_tokens(props.iter(), context);
-                // exiting the 'scope' of a property, we drop the property's bindings, but
-                // it may be _optionally_ desirable to do so for tags as well.
+                // TODO: exiting the 'scope' of a property, we drop the
+                // property's bindings, but bindings, but it may be _optionally_
+                // desirable to do so for tags as well.
                 binds.iter().for_each(|(key, _)| context.unbind(key));
                 ret
             },
@@ -291,5 +288,14 @@ impl Scribe {
             Token::Binding(_) => unreachable!(),
             Token::Unknown(content) => Err(AnnalsFailure::UnknownToken{ content: content.to_string() }.into())
         }
+    }
+}
+
+
+impl FromStr for Scribe {
+    type Err = Error;
+    /// Create a new Scribe from a YAML string.
+    fn from_str(data: &str) -> Result<Self, Error> {
+        serde_yaml::from_str(data).map_err(Into::into)
     }
 }
