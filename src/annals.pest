@@ -1,16 +1,15 @@
 template = _{ soi ~ (tag|literal)+ ~ eoi }
 
-literal = { whitespace* ~ (char | symbol | escape | quote | digit)+ ~ whitespace* }
+literal = @{ " "* ~ (char | symbol | escape | quote | digit)+ ~ " "*}
 
 tag = _{ "<" ~ expan ~ ">" }
 expan = _{ (property | variable) }
 
-bindings = _{ binding+ }
+// Property - bare-ident. Can refer to another expan.
+property = { binding* ~ ident }
 binding = { "[" ~ ident ~ ":" ~ ident ~ "]" }
 variable = { "$" ~ ident }
 
-// Property - bare-ident. Can refer to another expan.
-property = { bindings? ~ ident }
 
 ident = @{ char ~ (char | digit | "_" )* }
 
@@ -26,4 +25,4 @@ hex = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
 symbol = _{ "!" | "?" | "," | "." | "_" }
 char = _{ 'a'..'z' | 'A'..'Z' }
 digit = _{ '0'..'9' }
-whitespace = _{ " " | "\r" | "\t" | "\n" }
+_whitespace = _{ " " | "\r" | "\t" | "\n" }
