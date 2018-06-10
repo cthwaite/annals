@@ -1,0 +1,15 @@
+- name: planet
+  groups:
+    - templates: ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "neptune", "uranus", "pluto"]
+- name: continent
+  groups:
+    - templates: ["asia", "africa", "north america", "south america", "antarctica", "europe", "australia"]
+- name: greeting
+  groups:
+    - templates:
+        - "hello, <planet>, from the people of <continent>! <continent> salutes you!"
+        - "hello <planet>!"
+- name: root
+  groups:
+    - templates:
+        - "<[continent:continent]greeting>"
