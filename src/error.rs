@@ -20,5 +20,10 @@ pub enum AnnalsFailure {
     #[fail(display = "Unknown token: {}", content)]
     UnknownToken {
         content: String,
+    },
+
+    #[fail(display = "Unbound variable: {}", name)]
+    UnboundVariable {
+        name: String
     }
 }
