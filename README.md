@@ -3,6 +3,14 @@
 annals is a library for procedurally generating text from simple grammars, inspired by [tracery](https://github.com/galaxykate/tracery) and [improv](https://github.com/sequitur/improv).
 
 
+## todo
+- full suite of tests
+- comprehensive documentation
+- builtin functions for inline articles and capitalisation
+- more efficient template expansion
+- optionally disallow repetition of templates?
+
+
 ## overview
 
 annal uses *Templates* to generate text. each Template is a string:
@@ -171,9 +179,3 @@ to see the above grammar in action, run the `improv` example:
 ```
 cargo run --example improv
 ```
-
-## todo
-- full suite of tests
-- comprehensive documentation
-- builtin functions for inline articles and capitalisation
-- builder model for Context and Cognate

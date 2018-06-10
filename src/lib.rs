@@ -151,6 +151,7 @@ impl Scribe {
         let cognates : Vec<&Cognate> = self.cognates.values().collect();
         serde_yaml::to_writer(f, &cognates).map_err(Into::into)
     }
+
     /// Select a template from a named Cognate using the passed Context.
     fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, Error> {
         match self.cognates.get(name) {
@@ -159,11 +160,11 @@ impl Scribe {
                     return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
                 }
                 let groups = cognate.groups.iter()
-                                            .filter(|grp| context.accept(grp))
-                                            .collect::<Vec<_>>();
+                                           .filter(|grp| context.accept(grp))
+                                           .collect::<Vec<_>>();
                 if groups.is_empty() {
                     let context = format!("{:?}", context.tags);
-                    return Err(AnnalsFailure::NoSuitableGroups{context}.into());
+                    return Err(AnnalsFailure::NoSuitableGroups{name: name.to_string(), context}.into());
                 }
                 let mut templates = GroupListIter::new(groups);
                 if templates.size == 0 {
