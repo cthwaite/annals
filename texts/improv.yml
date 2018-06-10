@@ -1,0 +1,14 @@
+---
+- name: animal
+  groups:
+    - tags: { "class": "mammal" }
+      templates:
+        - dog
+        - cat
+    - tags: { "class": "bird" }
+      templates:
+        - parrot
+- name: root
+  groups:
+    - templates:
+        - "<name>: I have a <animal> who is <#2-7> years old."

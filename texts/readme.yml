@@ -1,0 +1,17 @@
+---
+- name: animal
+  groups:
+    - tags: { "size": "big" }
+      templates: ["elephant", "whale"]
+    - tags: { "size": "small" }
+      templates: ["mouse", "milk snake"]
+- name: expression
+  groups:
+    - templates: [
+        "what a beautiful <animal>",
+        "oh, look at that <animal>!"
+    ]
+    - tags: { "size": "big" }
+      templates: [ "wow! look at the size of that <animal>" ]
+    - tags: { "size": "small" }
+      templates: [ "oh look! a tiny <animal>!" ]

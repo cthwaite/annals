@@ -1,8 +1,8 @@
 extern crate annals;
 extern crate serde_yaml;
 
-use annals::{Cognate, Context, Scribe};
-use std::fs::File;
+use annals::{Context, Scribe};
+
 
 fn main() {
     let mut scribe = Scribe::new();
