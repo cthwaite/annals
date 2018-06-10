@@ -6,21 +6,60 @@ use error::AnnalsFailure;
 use parser::{AnnalsParser, Rule};
 use std::slice::Iter;
 
+#[inline]
+fn is_binding(token: &Token) -> bool {
+    match token {
+        Token::Binding(_) => true,
+        _ => false
+    }
+}
 
+#[inline]
+pub fn expand_property(token: Pair<Rule>) -> Token {
+    let tokens = token.into_inner()
+                      .map(parse_token)
+                      .collect::<Vec<Token>>();
+    let mut binds : Vec<(String, String)> = vec![];
+    let mut props : Vec<Token> = vec![];
+    for token in tokens.into_iter() {
+        match token {
+            Token::Binding((key, val)) => binds.push((key, val)),
+            _ => props.push(token)
+        }
+    }
+    if !binds.is_empty() {
+        Token::PropertyWithBindings{binds, props}
+    }
+    else {
+        Token::Property(props)
+    }
+}
+
+/// Translate pest-parsed string into Tokens.
 pub fn parse_token(token: Pair<Rule>) -> Token {
     match token.as_rule() {
         Rule::literal => Token::Literal(token.as_str().to_string()),
-        Rule::property => Token::Property(token.into_inner().map(parse_token).collect()),
+        Rule::property => expand_property(token),
         Rule::ident => Token::Ident(token.as_str().to_string()),
+        Rule::variable => Token::Variable(token.as_str().to_string()),
+        Rule::binding => {
+            let mut pair = token.into_inner();
+            let key = pair.next().unwrap().as_str().to_string();
+            let val = pair.next().unwrap().as_str().to_string();
+            Token::Binding((key, val))
+        },
         _ => Token::Unknown(token.as_str().to_string())
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Literal(String),
     Property(Vec<Token>),
+    PropertyWithBindings{binds: Vec<(String, String)>, props: Vec<Token>},
     Ident(String),
+    Variable(String),
+    Binding((String, String)),
     Unknown(String)
 }
 
