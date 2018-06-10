@@ -41,7 +41,7 @@ pub fn parse_token(token: Pair<Rule>) -> Token {
         Rule::literal => Token::Literal(token.as_str().to_string()),
         Rule::property => expand_property(token),
         Rule::ident => Token::Ident(token.as_str().to_string()),
-        Rule::variable => Token::Variable(token.as_str().to_string()),
+        Rule::variable => Token::Variable(token.as_str()[1..].to_string()),
         Rule::binding => {
             let mut pair = token.into_inner();
             let key = pair.next().unwrap().as_str().to_string();
