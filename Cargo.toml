@@ -1,11 +1,10 @@
 [package]
 name = "annals"
-version = "0.0.0"
-authors = [""]
+version = "0.1.0"
+authors = ["cthwaite"]
 
 [dependencies]
 failure = "0.1"
-itertools = "0.7"
 pest = "1.0"
 pest_derive = "*"
 rand = "0.5"

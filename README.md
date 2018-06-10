@@ -152,4 +152,6 @@ cargo run --example improv
 
 ## todo
 - full suite of tests
-- implement builtin functions for inline articles and capitalisation
+- comprehensive documentation
+- builtin functions for inline articles and capitalisation
+- builder model for Context and Cognate
