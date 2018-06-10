@@ -3,9 +3,14 @@ template = _{ soi ~ (tag|literal)+ ~ eoi }
 literal = { whitespace* ~ (char | symbol | escape | quote | digit)+ ~ whitespace* }
 
 tag = _{ "<" ~ expan ~ ">" }
-expan = _{ (property) }
+expan = _{ (property | variable) }
+
+bindings = _{ binding+ }
+binding = { "[" ~ ident ~ ":" ~ ident ~ "]" }
+variable = { "$" ~ ident }
+
 // Property - bare-ident. Can refer to another expan.
-property = { ident }
+property = { bindings? ~ ident }
 
 ident = @{ char ~ (char | digit | "_" )* }
 
