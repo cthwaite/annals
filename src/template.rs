@@ -4,7 +4,7 @@ use pest::Parser;
 
 use error::AnnalsFailure;
 use parser::{AnnalsParser, Rule};
-use std::slice::Iter;
+
 
 #[inline]
 fn is_binding(token: &Token) -> bool {
@@ -73,24 +73,24 @@ pub enum Token {
 #[derive(Debug, PartialEq)]
 pub struct Template {
     pub literal: String,
-    parsed: Vec<Token>
+    pub tokens: Vec<Token>
 }
 
 
 impl Template {
     pub fn new(text: &str) -> Result<Self, Error> {
-        let parsed = Template::parse(text)?;
+        let tokens = Template::parse(text)?;
         Ok(Template {
             literal: text.to_string(),
-            parsed
+            tokens
         })
     }
 
     pub fn from_string(literal: String) -> Result<Self, Error> {
-        let parsed = Template::parse(&literal)?;
+        let tokens = Template::parse(&literal)?;
         Ok(Template {
             literal,
-            parsed
+            tokens
         })
     }
 
@@ -102,10 +102,6 @@ impl Template {
                 error: format!("{}", e)
             })
         }
-    }
-
-    pub fn iter(&self) -> Iter<Token> {
-        self.parsed.iter()
     }
 }
 
@@ -174,12 +170,12 @@ mod test {
     #[test]
     fn test_template_iter() {
         let tmp = Template::new("<a>").unwrap();
-        assert_eq!(*tmp.iter().next().unwrap(), Token::Property(vec![Token::Ident("a".to_owned())]));
+        assert_eq!(tmp.tokens[0], Token::Property(vec![Token::Ident("a".to_owned())]));
     }
 
     #[test]
     fn test_range() {
         let tmp = Template::new("<#39-100>").unwrap();
-        assert_eq!(*tmp.iter().next().unwrap(), Token::Range{lower: 39, upper: 100});
+        assert_eq!(tmp.tokens[0], Token::Range{lower: 39, upper: 100});
     }
 }

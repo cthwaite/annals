@@ -13,7 +13,6 @@ use failure::Error;
 use rand::prelude::*;
 use std::collections::HashMap;
 use std::fs::File;
-use std::slice::Iter;
 use std::str::FromStr;
 
 
@@ -119,26 +118,26 @@ impl Scribe {
     pub fn gen(&self, cognate: &str) -> Result<String, Error> {
         let mut context = Context::new();
         let template = self.select_template(cognate, &mut context)?;
-        self.expand_tokens(template.iter(), &mut context)
+        self.expand_tokens(&template.tokens, &mut context)
     }
 
     /// Generate text from a named Cognate using the passed Context.
     pub fn gen_with(&self, cognate: &str, mut context: Context) -> Result<String, Error> {
         let template = self.select_template(cognate, &mut context)?;
-        self.expand_tokens(template.iter(), &mut context)
+        self.expand_tokens(&template.tokens, &mut context)
     }
 
     /// Generate text from the passed template string.
     pub fn expand(&self, template: &str) -> Result<String, Error> {
-        let tmp = Template::from_string(template.to_owned())?;
+        let template = Template::from_string(template.to_owned())?;
         let mut context = Context::new();
-        self.expand_tokens(tmp.iter(), &mut context)
+        self.expand_tokens(&template.tokens, &mut context)
     }
 
     /// Generate text from the passed template string and Context.
     pub fn expand_with(&self, template: &str, mut context: Context) -> Result<String, Error> {
-        let tmp = Template::from_string(template.to_owned())?;
-        self.expand_tokens(tmp.iter(), &mut context)
+        let template = Template::from_string(template.to_owned())?;
+        self.expand_tokens(&template.tokens, &mut context)
     }
     /// Save this Scribe to a YAML file.
     pub fn save(&self, path: &str) -> Result<(), Error> {
@@ -187,8 +186,8 @@ impl Scribe {
 
     /// Expand an iterator over a sequence of Tokens into a String.
     #[inline]
-    fn expand_tokens(&self, tokens: Iter<Token>, context: &mut Context) -> Result<String, Error> {
-        let expan = tokens
+    fn expand_tokens(&self, tokens: &[Token], context: &mut Context) -> Result<String, Error> {
+        let expan = tokens.iter()
                         .map(|tok| self.handle_token(tok, context))
                         .collect::<Result<Vec<String>, Error>>()?;
         Ok(expan.join(""))
@@ -204,24 +203,24 @@ impl Scribe {
                     if let Some(bind) = context.get_binding(key) {
                         context.bind(key, bind);
                     }
-                    let temp = self.select_template(val, context)?;
-                    let bind = self.expand_tokens(temp.iter(), context)?;
+                    let template = self.select_template(val, context)?;
+                    let bind = self.expand_tokens(&template.tokens, context)?;
                     context.bind(key, bind);
                 }
-                let ret = self.expand_tokens(props.iter(), context);
+                let ret = self.expand_tokens(&props, context);
                 // TODO: exiting the 'scope' of a property, we drop the
                 // property's bindings, but bindings, but it may be _optionally_
                 // desirable to do so for tags as well.
                 binds.iter().for_each(|(key, _)| context.unbind(key));
                 ret
             },
-            Token::Property(tokens) => self.expand_tokens(tokens.iter(), context),
+            Token::Property(tokens) => self.expand_tokens(&tokens, context),
             Token::Ident(name) => {
                 if let Some(bind) = context.get_binding(name) {
                     return Ok(bind);
                 }
-                let temp = self.select_template(name, context)?;
-                self.expand_tokens(temp.iter(), context)
+                let template = self.select_template(name, context)?;
+                self.expand_tokens(&template.tokens, context)
             },
             Token::Variable(name) => {
                 if let Some(bind) = context.get_binding(name) {
