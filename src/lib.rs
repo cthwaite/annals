@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
 #[macro_use] extern crate failure;
-extern crate pest;
+#[cfg(test)] #[macro_use] extern crate pest;
+#[cfg(not(test))] extern crate pest;
 #[macro_use] extern crate pest_derive;
 extern crate rand;
 extern crate serde;
@@ -116,28 +117,40 @@ impl Context {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Scribe {
-    filters: Vec<String>,
     cognates: HashMap<String, Cognate>,
 }
 
 impl Scribe {
     pub fn new() -> Self {
         Scribe {
-            filters: vec![],
             cognates: HashMap::new(),
         }
     }
 
     /// Create a new Scribe from a YAML file.
-    pub fn from_yaml(path: &str) -> Result<Self, Error> {
+    pub fn from(path: &str) -> Result<Self, Error> {
         let f = File::open(path)?;
         serde_yaml::from_reader(f).map_err(Into::into)
+    }
+
+    /// Create a new Scribe from a YAML string.
+    pub fn from_str(data: &str) -> Result<Self, Error> {
+        serde_yaml::from_str(data).map_err(Into::into)
     }
 
     /// Load a list of Cognates from a YAML file, inserting them into this Scribe.
     pub fn load_cognates(&mut self, path: &str) -> Result<(), Error> {
         let f = File::open(path)?;
         let cogs : Vec<Cognate> = serde_yaml::from_reader(f)?;
+        for cog in cogs {
+            self.insert_cognate(cog);
+        }
+        Ok(())
+    }
+
+    /// Load a list of Cognates from a YAML string, inserting them into this Scribe.
+    pub fn load_cognates_str(&mut self, data: &str) -> Result<(), Error> {
+        let cogs : Vec<Cognate> = serde_yaml::from_str(data)?;
         for cog in cogs {
             self.insert_cognate(cog);
         }
@@ -253,6 +266,8 @@ impl Scribe {
                     context.bind(key, bind);
                 }
                 let ret = self.expand_tokens(props.iter(), context);
+                // exiting the 'scope' of a property, we drop the property's bindings, but
+                // it may be _optionally_ desirable to do so for tags as well.
                 binds.iter().for_each(|(key, _)| context.unbind(key));
                 ret
             },

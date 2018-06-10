@@ -8,6 +8,7 @@ pub struct AnnalsParser;
 
 #[cfg(test)]
 mod test {
+    use super::Rule;
     use super::AnnalsParser;
 
     #[test]
@@ -36,7 +37,7 @@ mod test {
     }
 
     #[test]
-    fn simple_template_literal_property() {
+    fn simple_template_literal_tag() {
         parses_to! {
             parser: AnnalsParser,
             input:  "Hello <world>!",

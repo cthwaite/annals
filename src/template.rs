@@ -121,14 +121,15 @@ pub mod template_list {
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Template>, D::Error>
         where D: Deserializer<'de> {
             let literals : Vec<String> = Vec::<String>::deserialize(deserializer)?;
-            match literals.into_iter().map(Template::from_string).collect() {
-                Ok(templates) => Ok(templates),
+            match literals.into_iter().map(Template::from_string).collect() { Ok(templates) => Ok(templates),
                 Err(_) => Ok(vec![])
             }
     }
 }
 
+#[cfg(test)]
 mod test {
+    use super::{Template, Token};
     #[test]
     fn test_template_valid() {
         macro_rules! good_template {
