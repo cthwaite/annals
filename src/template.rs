@@ -21,7 +21,7 @@ pub fn expand_property(token: Pair<Rule>) -> Token {
                       .collect::<Vec<Token>>();
     let mut binds : Vec<(String, String)> = vec![];
     let mut props : Vec<Token> = vec![];
-    for token in tokens.into_iter() {
+    for token in tokens {
         match token {
             Token::Binding((key, val)) => binds.push((key, val)),
             _ => props.push(token)
