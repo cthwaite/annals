@@ -211,6 +211,9 @@ impl Scribe {
                     return Err(AnnalsFailure::NoSuitableGroups{context}.into());
                 }
                 let mut templates = GroupListIter::new(groups);
+                if templates.size == 0 {
+                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
+                }
                 let index = thread_rng().gen_range(0, templates.size);
                 match templates.nth(index) {
                     Some(template) => {
