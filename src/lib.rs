@@ -246,7 +246,7 @@ impl Scribe {
             Token::PropertyWithBindings{binds, props} => {
                 for (key, val) in binds.iter() {
                     if let Some(bind) = context.get_binding(key) {
-                        (key, bind);
+                        context.bind(key, bind);
                     }
                     let temp = self.select_template(val, context)?;
                     let bind = self.expand_tokens(temp.iter(), context)?;
