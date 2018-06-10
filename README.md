@@ -20,8 +20,8 @@ hello <world>
 my favourite food is <food>
 ```
 
-rules are bundled into *Groups*, which contain a list of rules, and an optional
-set of key-value pairs incorporated into the text generation model
+*Groups* each contain a list of rules, and optionally a set of 'tags': key-value
+pairs incorporated into the model as each template is expanded.
 
 ```yaml
 # group for big animals
@@ -32,8 +32,11 @@ set of key-value pairs incorporated into the text generation model
   templates: ["mouse", "milk snake"]
 ```
 
-*Groups* are bundled into named sets called *Cognates*; these are the names that
-each Property refers to.
+*Cognates* are named collections of Groups; Properties are matched against the
+names of Cognates.
+
+putting this all together, here's a YAML file listing two Cognates, "animal"
+and "expression":
 
 ```yaml
 - name: animal
@@ -57,11 +60,30 @@ each Property refers to.
       templates: [ "oh look! a tiny <animal>!" ]
 ```
 
-finally, Cognates are bundled into a Scribe object, which is used to generate
-text. to see the above grammar in action, run the `readme` example:
+to see the above grammar in action, run the `readme` example:
 
 ```
 cargo run --example readme
+```
+
+text generation is handled by the *Scribe*, which is loaded with cognates and
+invoked on a cognate name or custom template.
+
+```rust
+let mut scribe = Scribe::new();
+// load the above YAML file
+scribe.load_cognates("readme.yml");
+
+// generate a string from a randomly-selected template in the "expression" Cognate
+let expr = scribe.gen("expression")?;
+
+// generate a string from the passed template, using the stored Cognates
+let expr = scribe.expand("<expression> <expression>")?;
+
+// generate a string, matching on tags in the passed Context
+let mut ctx = Context::new();
+ctx.set("size", "small");
+let expr = scribe.gen_with("expression", &mut ctx)?;
 ```
 
 ## tracery-style bindings
