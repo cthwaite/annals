@@ -31,7 +31,7 @@ pub fn expand_property(token: Pair<Rule>) -> Token {
         Token::PropertyWithBindings{binds, props}
     }
     else {
-        Token::Property(props)
+        unreachable!()
     }
 }
 
@@ -39,7 +39,11 @@ pub fn expand_property(token: Pair<Rule>) -> Token {
 pub fn parse_token(token: Pair<Rule>) -> Token {
     match token.as_rule() {
         Rule::literal => Token::Literal(token.as_str().to_string()),
-        Rule::property => expand_property(token),
+        Rule::property => {
+            let ident = token.into_inner().next().unwrap();
+            Token::Property(ident.as_str().to_string())
+        },
+        Rule::bound_property => expand_property(token),
         Rule::ident => Token::Ident(token.as_str().to_string()),
         Rule::variable => Token::Variable(token.as_str()[1..].to_string()),
         Rule::binding => {
@@ -61,7 +65,7 @@ pub fn parse_token(token: Pair<Rule>) -> Token {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Literal(String),
-    Property(Vec<Token>),
+    Property(String),
     PropertyWithBindings{binds: Vec<(String, String)>, props: Vec<Token>},
     Ident(String),
     Range{lower: i32, upper: i32},
@@ -170,7 +174,7 @@ mod test {
     #[test]
     fn test_template_iter() {
         let tmp = Template::new("<a>").unwrap();
-        assert_eq!(tmp.tokens[0], Token::Property(vec![Token::Ident("a".to_owned())]));
+        assert_eq!(tmp.tokens[0], Token::Property("a".to_owned()));
     }
 
     #[test]

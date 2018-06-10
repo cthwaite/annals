@@ -3,10 +3,11 @@ template = _{ soi ~ (tag|literal)+ ~ eoi }
 literal =  @{ (char | symbol | escape | quote | digit | " ")+ }
 
 tag = _{ "<" ~ expan ~ ">" }
-expan = _{ (property | range | variable) }
+expan = _{ (property | bound_property | range | variable) }
 
 // Property - bare-ident, optionally preceded by bindings.
-property = { binding* ~ ident }
+property = { ident }
+bound_property = { binding+ ~ ident }
 binding = { "[" ~ ident ~ ":" ~ ident ~ "]" }
 variable = { "$" ~ ident }
 range = { "#" ~ number ~ "-" ~ number }
