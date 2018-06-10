@@ -10,7 +10,7 @@ fn main() {
     let mut scribe = Scribe::new();
     cogs.into_iter().for_each(|cog| scribe.insert_cognate(cog));
     for _i in 0..5 {
-        println!("{}", scribe.gen("greeting").unwrap());
+        println!("{}", scribe.gen("<greeting>").unwrap());
     }
     let mut ctx = Context::new();
     ctx.set("colour", "red");
