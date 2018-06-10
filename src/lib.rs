@@ -61,13 +61,15 @@ impl Cognate {
 
 #[derive(Default)]
 pub struct Context {
-    pub tags: HashMap<String, String>
+    pub tags: HashMap<String, String>,
+    bindings: HashMap<String, String>
 }
 
 impl Context {
     pub fn new() -> Self {
         Context {
-            tags: HashMap::new()
+            tags: HashMap::default(),
+            bindings: HashMap::default()
         }
     }
 
@@ -81,6 +83,22 @@ impl Context {
     /// Set the value of a tag.
     pub fn set<T: AsRef<str>>(&mut self, key: T, value: T) {
         self.tags.insert(key.as_ref().to_string(), value.as_ref().to_string());
+    }
+
+    /// Add a binding.
+    pub fn bind(&mut self, key: &str, value: String) {
+        self.bindings.insert(key.to_string(), value);
+    }
+
+    pub fn unbind<T: AsRef<str>>(&mut self, key: T) {
+        self.bindings.remove(key.as_ref());
+    }
+
+    pub fn get_binding(&mut self, key: &str) -> Option<String> {
+        if self.bindings.contains_key(key) {
+            return Some(self.bindings[key].clone());
+        }
+        None
     }
 
     /// Check if a group's tags match the tags in this Context.
@@ -116,6 +134,16 @@ impl Scribe {
         serde_yaml::from_reader(f).map_err(Into::into)
     }
 
+    /// Load a list of Cognates from a YAML file, inserting them into this Scribe.
+    pub fn load_cognates(&mut self, path: &str) -> Result<(), Error> {
+        let f = File::open(path)?;
+        let cogs : Vec<Cognate> = serde_yaml::from_reader(f)?;
+        for cog in cogs {
+            self.insert_cognate(cog);
+        }
+        Ok(())
+    }
+
     /// Create and return a new Cognate.
     pub fn cognate(&mut self, name: &str) -> &mut Cognate {
         self.cognates.entry(name.to_string())
@@ -125,6 +153,10 @@ impl Scribe {
     /// Insert a Cognate.
     pub fn insert_cognate(&mut self, cognate: Cognate) {
         self.cognates.insert(cognate.name.to_string(), cognate);
+    }
+
+    pub fn iter(&self) -> std::collections::hash_map::Values<String, Cognate> {
+        self.cognates.values()
     }
 
     /// Generate text from a named Cognate.
@@ -152,17 +184,6 @@ impl Scribe {
         let tmp = Template::from_string(template.to_owned())?;
         self.expand_tokens(tmp.iter(), &mut context)
     }
-
-    /// Load a list of Cognates from a YAML file, inserting them into this Scribe.
-    pub fn load_cognates(&mut self, path: &str) -> Result<(), Error> {
-        let f = File::create(path)?;
-        let cogs : Vec<Cognate> = serde_yaml::from_reader(f)?;
-        for cog in cogs {
-            self.insert_cognate(cog);
-        }
-        Ok(())
-    }
-
     /// Save this Scribe to a YAML file.
     pub fn save(&self, path: &str) -> Result<(), Error> {
         let f = File::create(path)?;
@@ -214,15 +235,39 @@ impl Scribe {
         Ok(expan.join(""))
     }
 
+
     /// Recursively expand a token to a String.
     fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, Error> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
+            Token::PropertyWithBindings{binds, props} => {
+                for (key, val) in binds.iter() {
+                    if let Some(bind) = context.get_binding(key) {
+                        (key, bind);
+                    }
+                    let temp = self.select_template(val, context)?;
+                    let bind = self.expand_tokens(temp.iter(), context)?;
+                    context.bind(key, bind);
+                }
+                let ret = self.expand_tokens(props.iter(), context);
+                binds.iter().for_each(|(key, _)| context.unbind(key));
+                ret
+            },
             Token::Property(tokens) => self.expand_tokens(tokens.iter(), context),
             Token::Ident(name) => {
+                if let Some(bind) = context.get_binding(name) {
+                    return Ok(bind);
+                }
                 let temp = self.select_template(name, context)?;
                 self.expand_tokens(temp.iter(), context)
             },
+            Token::Variable(name) => {
+                if let Some(bind) = context.get_binding(name) {
+                    return Ok(bind);
+                }
+                Err(AnnalsFailure::UnboundVariable{ name: name.clone() }.into())
+            },
+            Token::Binding(_) => unreachable!(),
             Token::Unknown(content) => Err(AnnalsFailure::UnknownToken{ content: content.to_string() }.into())
         }
     }
