@@ -3,12 +3,13 @@ template = _{ soi ~ (tag|literal)+ ~ eoi }
 literal =  @{ (char | symbol | escape | quote | digit | " ")+ }
 
 tag = _{ "<" ~ expan ~ ">" }
-expan = _{ (property | variable) }
+expan = _{ (property | range | variable) }
 
 // Property - bare-ident, optionally preceded by bindings.
 property = { binding* ~ ident }
 binding = { "[" ~ ident ~ ":" ~ ident ~ "]" }
 variable = { "$" ~ ident }
+range = { "#" ~ number ~ "-" ~ number }
 
 
 ident = @{ char ~ (char | digit | "_" )* }
@@ -24,5 +25,6 @@ hex = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
 
 symbol = _{ "!" | "?" | "," | "." | "_" | ":" | ";" }
 char = _{ 'a'..'z' | 'A'..'Z' }
+number = { digit+ }
 digit = _{ '0'..'9' }
 // _whitespace = _{ " " | "\r" | "\t" | "\n" }

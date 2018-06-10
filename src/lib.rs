@@ -285,6 +285,9 @@ impl Scribe {
                 }
                 Err(AnnalsFailure::UnboundVariable{ name: name.clone() }.into())
             },
+            Token::Range{lower, upper} => {
+                Ok(thread_rng().gen_range(*lower, *upper).to_string())
+            },
             Token::Binding(_) => unreachable!(),
             Token::Unknown(content) => Err(AnnalsFailure::UnknownToken{ content: content.to_string() }.into())
         }

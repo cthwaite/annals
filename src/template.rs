@@ -48,6 +48,12 @@ pub fn parse_token(token: Pair<Rule>) -> Token {
             let val = pair.next().unwrap().as_str().to_string();
             Token::Binding((key, val))
         },
+        Rule::range => {
+            let mut pair = token.into_inner();
+            let lower = pair.next().unwrap().as_str().to_string();
+            let upper = pair.next().unwrap().as_str().to_string();
+            Token::Range{ lower: lower.parse().unwrap(), upper: upper.parse().unwrap() }
+        }
         _ => Token::Unknown(token.as_str().to_string())
     }
 }
@@ -58,6 +64,7 @@ pub enum Token {
     Property(Vec<Token>),
     PropertyWithBindings{binds: Vec<(String, String)>, props: Vec<Token>},
     Ident(String),
+    Range{lower: i32, upper: i32},
     Variable(String),
     Binding((String, String)),
     Unknown(String)
@@ -168,5 +175,11 @@ mod test {
     fn test_template_iter() {
         let tmp = Template::new("<a>").unwrap();
         assert_eq!(*tmp.iter().next().unwrap(), Token::Property(vec![Token::Ident("a".to_owned())]));
+    }
+
+    #[test]
+    fn test_range() {
+        let tmp = Template::new("<#39-100>").unwrap();
+        assert_eq!(*tmp.iter().next().unwrap(), Token::Range{lower: 39, upper: 100});
     }
 }
