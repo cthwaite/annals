@@ -93,7 +93,7 @@ impl Scribe {
     }
 
     /// Load a list of Cognates from a YAML string, inserting them into this Scribe.
-    pub fn load_cognates_str(&mut self, data: &str) -> Result<(), Error> {
+    pub fn load_cognates_str(&mut self, data: &str) -> Result<(), serde_yaml::Error> {
         let cogs : Vec<Cognate> = serde_yaml::from_str(data)?;
         for cog in cogs {
             self.insert_cognate(cog);
@@ -118,27 +118,27 @@ impl Scribe {
     }
 
     /// Generate text from a named Cognate.
-    pub fn gen(&self, cognate: &str) -> Result<String, Error> {
+    pub fn gen(&self, cognate: &str) -> Result<String, AnnalsFailure> {
         let mut context = Context::new();
         let template = self.select_template(cognate, &mut context)?;
         self.expand_tokens(&template.tokens, &mut context)
     }
 
     /// Generate text from a named Cognate using the passed Context.
-    pub fn gen_with(&self, cognate: &str, mut context: Context) -> Result<String, Error> {
+    pub fn gen_with(&self, cognate: &str, mut context: Context) -> Result<String, AnnalsFailure> {
         let template = self.select_template(cognate, &mut context)?;
         self.expand_tokens(&template.tokens, &mut context)
     }
 
     /// Generate text from the passed template string.
-    pub fn expand(&self, template: &str) -> Result<String, Error> {
+    pub fn expand(&self, template: &str) -> Result<String, AnnalsFailure> {
         let template = Template::from_string(template.to_owned())?;
         let mut context = Context::new();
         self.expand_tokens(&template.tokens, &mut context)
     }
 
     /// Generate text from the passed template string and Context.
-    pub fn expand_with(&self, template: &str, mut context: Context) -> Result<String, Error> {
+    pub fn expand_with(&self, template: &str, mut context: Context) -> Result<String, AnnalsFailure> {
         let template = Template::from_string(template.to_owned())?;
         self.expand_tokens(&template.tokens, &mut context)
     }
@@ -156,7 +156,7 @@ impl Scribe {
     }
 
     /// Select a template from a named Cognate using the passed Context.
-    fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, Error> {
+    fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, AnnalsFailure> {
         match self.cognates.get(name) {
             Some(cognate) => {
                 if cognate.groups.is_empty() {
@@ -188,13 +188,13 @@ impl Scribe {
         }
     }
 
-    pub fn unspool(&self) -> Result<String, Error> {
+    pub fn unspool(&self) -> Result<String, AnnalsFailure> {
         let mut ctx = Context::new();
         let template = self.select_template("root", &mut ctx)?;
         self.unspool_impl(&template, &mut ctx).and_then(|cows| Ok(cows.join("")))
     }
 
-    fn unspool_impl<'a>(&self, template: &'a Template, ctx: &mut Context) -> Result<Vec<Cow<'a, str>>, Error> {
+    fn unspool_impl<'a>(&self, template: &'a Template, ctx: &mut Context) -> Result<Vec<Cow<'a, str>>, AnnalsFailure> {
         let mut stack : Vec<&'a Token> = template.tokens.iter().rev().collect();
         let mut out : Vec<Cow<'a, str>> = vec![];
         while let Some(token) = stack.pop() {
@@ -220,15 +220,15 @@ impl Scribe {
 
     /// Expand an iterator over a sequence of Tokens into a String.
     #[inline]
-    fn expand_tokens(&self, tokens: &[Token], context: &mut Context) -> Result<String, Error> {
+    fn expand_tokens(&self, tokens: &[Token], context: &mut Context) -> Result<String, AnnalsFailure> {
         let ret = tokens.iter()
               .map(|tok| self.handle_token(tok, context))
-              .collect::<Result<Vec<_>, Error>>()?
+              .collect::<Result<Vec<_>, AnnalsFailure>>()?
               .join("");
         Ok(ret)
     }
 
-    fn expand_name(&self, name: &str, context: &mut Context) -> Result<String, Error> {
+    fn expand_name(&self, name: &str, context: &mut Context) -> Result<String, AnnalsFailure> {
         if let Some(bind) = context.get_binding(name) {
             return Ok(bind);
         }
@@ -237,7 +237,7 @@ impl Scribe {
     }
 
     /// Recursively expand a token to a String.
-    fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, Error> {
+    fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, AnnalsFailure> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
             Token::PropertyWithBindings{binds, name} => {

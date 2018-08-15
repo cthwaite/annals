@@ -1,30 +1,70 @@
-#[derive(Debug, Fail)]
+use std::fmt::{self, Display};
+use std::error::Error;
+use serde::de;
+
+
+#[derive(Debug)]
 pub enum AnnalsFailure {
-    #[fail(display = "Unknown or unrecognised cognate: {}", name)]
     UnknownCognate {
         name: String,
     },
-    #[fail(display = "No groups in cognate: {}", name)]
     EmptyCognate {
         name: String,
     },
-    #[fail(display = "{}", error)]
     InvalidTemplate {
         template: String,
         error: String
     },
-    #[fail(display = "No suitable groups for {} in context: {}", name, context)]
     NoSuitableGroups {
         name: String,
         context: String
     },
-    #[fail(display = "Unknown token: {}", content)]
     UnknownToken {
         content: String,
     },
 
-    #[fail(display = "Unbound variable: {}", name)]
     UnboundVariable {
         name: String
+    },
+
+    ParsingError {
+        msg: String
+    },
+
+    UnknownError
+}
+
+impl de::Error for AnnalsFailure {
+    fn custom<T: Display>(msg: T) -> Self {
+        AnnalsFailure::ParsingError{msg: msg.to_string()}
+    }
+}
+
+impl Display for AnnalsFailure {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AnnalsFailure::UnknownCognate{name} => 
+                write!(formatter, "No groups in cognate: {}", name),
+            AnnalsFailure::EmptyCognate{name} => 
+                write!(formatter, "No groups in cognate: {}", name),
+            AnnalsFailure::InvalidTemplate{error, ..} =>
+                write!(formatter, "{}", error),
+            AnnalsFailure::NoSuitableGroups{name, context} =>
+                write!(formatter, "No suitable groups for {} in context: {}", name, context),
+            AnnalsFailure::UnknownToken{content} => 
+                write!(formatter, "Unknown token: {}", content),
+            AnnalsFailure::UnboundVariable{name} => 
+                write!(formatter, "Unbound variable: {}", name),
+            AnnalsFailure::ParsingError{msg} =>
+                write!(formatter, "Parsing error: {}", msg),
+            AnnalsFailure::UnknownError => write!(formatter, "Unknown error")
+        }
+    }
+}
+
+impl Error for AnnalsFailure {
+    /// This is soft-deprecated, so let Display do the heavy lifting.
+    fn description(&self) -> &str {
+        "Error"
     }
 }

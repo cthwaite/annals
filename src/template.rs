@@ -1,9 +1,9 @@
-use failure::Error;
 use pest::iterators::Pair;
 use pest::Parser;
 
 use error::AnnalsFailure;
 use parser::{AnnalsParser, Rule};
+
 
 
 #[inline]
@@ -83,7 +83,7 @@ pub struct Template {
 
 
 impl Template {
-    pub fn new(text: &str) -> Result<Self, Error> {
+    pub fn new(text: &str) -> Result<Self, AnnalsFailure> {
         let tokens = Template::parse(text)?;
         Ok(Template {
             literal: text.to_string(),
@@ -91,7 +91,7 @@ impl Template {
         })
     }
 
-    pub fn from_string(literal: String) -> Result<Self, Error> {
+    pub fn from_string(literal: String) -> Result<Self, AnnalsFailure> {
         let tokens = Template::parse(&literal)?;
         Ok(Template {
             literal,
@@ -110,11 +110,10 @@ impl Template {
     }
 }
 
-
 pub mod template_list {
     use super::Template;
 
-    use serde::de::{Deserialize, Deserializer};
+    use serde::de::{Deserialize, Deserializer, Error};
     use serde::ser::{Serializer, SerializeSeq};
 
     pub fn serialize<S>(templates: &[Template], serializer: S) -> Result<S::Ok, S::Error>
@@ -131,7 +130,10 @@ pub mod template_list {
             let literals : Vec<String> = Vec::<String>::deserialize(deserializer)?;
             match literals.into_iter().map(Template::from_string).collect() {
                 Ok(templates) =>  Ok(templates),
-                Err(e) => Err(e)
+                Err(e) => {
+                    println!("{}", e);
+                    Err(D::Error::custom(e))
+                }
             }
     }
 }
