@@ -12,7 +12,6 @@ extern crate serde_yaml;
 use failure::Error;
 use rand::prelude::*;
 use std::borrow::Cow;
-use std::slice::Iter;
 use std::collections::HashMap;
 use std::fs::File;
 use std::str::FromStr;
@@ -32,7 +31,7 @@ use template::{Token, Template};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cognate {
-    name: String,
+    pub name: String,
     groups: Vec<Group>
 }
 
@@ -113,6 +112,7 @@ impl Scribe {
         self.cognates.insert(cognate.name.to_string(), cognate);
     }
 
+    /// Iterate over Cognates in this Scribe.
     pub fn iter(&self) -> std::collections::hash_map::Values<String, Cognate> {
         self.cognates.values()
     }
@@ -188,25 +188,34 @@ impl Scribe {
         }
     }
 
-    pub fn unspool<'a>(&self) -> Result<String, Error> {
+    pub fn unspool(&self) -> Result<String, Error> {
         let mut ctx = Context::new();
         let template = self.select_template("root", &mut ctx)?;
-        self.unspool_impl(&template, &mut ctx);
-        Ok("".into())
+        self.unspool_impl(&template, &mut ctx).and_then(|cows| Ok(cows.join("")))
     }
 
-    fn unspool_impl<'a>(&self, template: &'a Template, ctx: &mut Context) -> Result<Vec<&'a Token>, Error> {
+    fn unspool_impl<'a>(&self, template: &'a Template, ctx: &mut Context) -> Result<Vec<Cow<'a, str>>, Error> {
         let mut stack : Vec<&'a Token> = template.tokens.iter().rev().collect();
-        /*
-        stack.iter().map(|tok| {
-            match tok {
-                Token::Property(tokens)
-                _ => _
+        let mut out : Vec<Cow<'a, str>> = vec![];
+        while let Some(token) = stack.pop() {
+            match token {
+                Token::Literal(text) => out.push(text[..].into()),
+                Token::PropertyWithBindings{binds, name} => {
+                    for (key, val) in binds.iter() {
+                        if ctx.get_binding(key).is_some() {
+                            continue;
+                        }
+                        let template = self.select_template(val, ctx)?;
+                        let bind = self.unspool_impl(&template, ctx)?;
+                        ctx.bind(key, bind.join(""));
+                    }
+                    let _template = self.select_template(name, ctx)?;
+                    binds.iter().for_each(|(key, _)| ctx.unbind(key));
+                },
+                _ => ()
             }
-        })
-        */
-
-        Ok(stack)
+        }
+        Ok(out)
     }
 
     /// Expand an iterator over a sequence of Tokens into a String.
@@ -219,41 +228,36 @@ impl Scribe {
         Ok(ret)
     }
 
+    fn expand_name(&self, name: &str, context: &mut Context) -> Result<String, Error> {
+        if let Some(bind) = context.get_binding(name) {
+            return Ok(bind);
+        }
+        let template = self.select_template(name, context)?;
+        self.expand_tokens(&template.tokens, context)
+    }
 
     /// Recursively expand a token to a String.
     fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, Error> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
-            Token::PropertyWithBindings{binds, props} => {
+            Token::PropertyWithBindings{binds, name} => {
                 for (key, val) in binds.iter() {
-                    if let Some(_) = context.get_binding(key) {
+                    if context.get_binding(key).is_some() {
                         continue;
                     }
                     let template = self.select_template(val, context)?;
                     let bind = self.expand_tokens(&template.tokens, context)?;
                     context.bind(key, bind);
                 }
-                let ret = self.expand_tokens(&props, context);
+                let ret = self.expand_name(name, context);
                 // TODO: exiting the 'scope' of a property, we drop the
                 // property's bindings, but bindings, but it may be _optionally_
                 // desirable to do so for tags as well.
                 binds.iter().for_each(|(key, _)| context.unbind(key));
                 ret
             },
-            Token::Property(name) => {
-                if let Some(bind) = context.get_binding(name) {
-                    return Ok(bind);
-                }
-                let template = self.select_template(name, context)?;
-                self.expand_tokens(&template.tokens, context)
-            },
-            Token::Ident(name) => {
-                if let Some(bind) = context.get_binding(name) {
-                    return Ok(bind);
-                }
-                let template = self.select_template(name, context)?;
-                self.expand_tokens(&template.tokens, context)
-            },
+            Token::Property(name) => self.expand_name(name, context),
+            Token::Ident(name) => self.expand_name(name, context),
             Token::Variable(name) => {
                 if let Some(bind) = context.get_binding(name) {
                     return Ok(bind);
@@ -277,4 +281,3 @@ impl FromStr for Scribe {
         serde_yaml::from_str(data).map_err(Into::into)
     }
 }
-

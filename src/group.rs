@@ -2,9 +2,16 @@ use failure::Error;
 use std::collections::HashMap;
 use template::{Template, template_list};
 
+fn always_false() -> bool {
+    false
+}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Group {
+    #[serde(default)]
+    note: String,
+    #[serde(default="always_false")]
+    bind: bool,
     #[serde(default)]
     pub tags: HashMap<String, String>,
     #[serde(with="template_list")]
@@ -14,6 +21,8 @@ pub struct Group {
 impl Group {
     pub fn new() -> Self {
         Group {
+            note: String::new(),
+            bind: false,
             tags: HashMap::new(),
             templates: vec![]
         }
@@ -23,6 +32,8 @@ impl Group {
         let templates : Result<Vec<_>, _> = templates.iter().map(|lit| Template::new(lit.as_ref())).collect();
         let templates = templates?;
         Ok(Group {
+            note: String::new(),
+            bind: false,
             tags: HashMap::new(),
             templates
         })

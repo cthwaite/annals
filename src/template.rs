@@ -15,23 +15,24 @@ fn is_binding(token: &Token) -> bool {
 }
 
 #[inline]
-pub fn expand_property(token: Pair<Rule>) -> Token {
-    let tokens = token.into_inner()
+pub fn expand_bound_property(token: Pair<Rule>) -> Token {
+    let mut tokens = token.into_inner()
                       .map(parse_token)
                       .collect::<Vec<Token>>();
-    let mut binds : Vec<(String, String)> = vec![];
-    let mut props : Vec<Token> = vec![];
-    for token in tokens {
-        match token {
-            Token::Binding((key, val)) => binds.push((key, val)),
-            _ => props.push(token)
+    let prop = tokens.pop().unwrap();
+    match prop {
+        Token::Ident(name) => {
+            Token::PropertyWithBindings{
+                binds: tokens.into_iter().map(|tok| {
+                    match tok {
+                        Token::Binding((key, val)) => (key, val),
+                        _ => unreachable!()
+                    }
+                }).collect(),
+                name
+            }
         }
-    }
-    if !binds.is_empty() {
-        Token::PropertyWithBindings{binds, props}
-    }
-    else {
-        unreachable!()
+        _ => unreachable!()
     }
 }
 
@@ -43,7 +44,7 @@ pub fn parse_token(token: Pair<Rule>) -> Token {
             let ident = token.into_inner().next().unwrap();
             Token::Property(ident.as_str().to_string())
         },
-        Rule::bound_property => expand_property(token),
+        Rule::bound_property => expand_bound_property(token),
         Rule::ident => Token::Ident(token.as_str().to_string()),
         Rule::variable => Token::Variable(token.as_str()[1..].to_string()),
         Rule::binding => {
@@ -66,7 +67,7 @@ pub fn parse_token(token: Pair<Rule>) -> Token {
 pub enum Token {
     Literal(String),
     Property(String),
-    PropertyWithBindings{binds: Vec<(String, String)>, props: Vec<Token>},
+    PropertyWithBindings{binds: Vec<(String, String)>, name: String},
     Ident(String),
     Range{lower: i32, upper: i32},
     Variable(String),
@@ -128,7 +129,8 @@ pub mod template_list {
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Template>, D::Error>
         where D: Deserializer<'de> {
             let literals : Vec<String> = Vec::<String>::deserialize(deserializer)?;
-            match literals.into_iter().map(Template::from_string).collect() { Ok(templates) => Ok(templates),
+            match literals.into_iter().map(Template::from_string).collect() {
+                Ok(templates) => Ok(templates),
                 Err(_) => Ok(vec![])
             }
     }
