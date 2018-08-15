@@ -24,7 +24,7 @@ quote = _{ "'" | "\"" }
 unicode_hex = { hex ~ hex ~ hex ~ hex ~ hex ~ hex | hex+ }
 hex = _{ '0'..'9' | 'a'..'f' | 'A'..'F' }
 
-symbol = _{ "!" | "?" | "," | "." | "_" | ":" | ";" }
+symbol = _{ "!" | "?" | "," | "." | "_" | ":" | ";" | "-" }
 char = _{ 'a'..'z' | 'A'..'Z' }
 number = { digit+ }
 digit = _{ '0'..'9' }
