@@ -130,8 +130,8 @@ pub mod template_list {
         where D: Deserializer<'de> {
             let literals : Vec<String> = Vec::<String>::deserialize(deserializer)?;
             match literals.into_iter().map(Template::from_string).collect() {
-                Ok(templates) => Ok(templates),
-                Err(_) => Ok(vec![])
+                Ok(templates) =>  Ok(templates),
+                Err(e) => Err(e)
             }
     }
 }
