@@ -1,20 +1,20 @@
 - name: name
   groups:
-    - templates: ["Arjun","Yuuma","Darcy","Mia","Chiaki","Izzi","Azra","Lina"]
+    - rules: ["Arjun","Yuuma","Darcy","Mia","Chiaki","Izzi","Azra","Lina"]
 
 - name: animal
   groups:
-    - templates: ["unicorn","raven","sparrow","scorpion","coyote","eagle","owl","lizard","zebra","duck","kitten"]
+    - rules: ["unicorn","raven","sparrow","scorpion","coyote","eagle","owl","lizard","zebra","duck","kitten"]
 
 - name: mood
   groups:
-    - templates: ["vexed","indignant","impassioned","wistful","astute","courteous"]
+    - rules: ["vexed","indignant","impassioned","wistful","astute","courteous"]
 
 - name: story
   groups:
-    - templates:
+    - rules:
         - "<hero> traveled with her pet <heroPet>. <hero> was never <mood>, for the <heroPet> was always too <mood>."
 - name: origin
   groups:
-    - templates:
+    - rules:
         - "<[hero:name][heroPet:animal]story>"
