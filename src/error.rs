@@ -3,6 +3,80 @@ use std::error::Error;
 use serde::de;
 
 
+#[derive(Debug, Clone)]
+pub enum ParseError {
+    InvalidExpression(usize, usize),
+    InvalidName(usize, usize),
+    InvalidRange(usize, usize),
+    UnbalancedBrackets,
+    UnknownCommand(usize, usize),
+    ZeroLengthSubst(usize),
+}
+
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseError::InvalidExpression(beg, end) => {
+                write!(f, "Invalid expression at ({}, {})", beg, end)
+            },
+            ParseError::InvalidName(beg, end) => {
+                write!(f, "Invalid name at ({}, {})", beg, end)
+            },
+            ParseError::UnbalancedBrackets => write!(f, "Unbalanced brackets in expr"),
+            ParseError::UnknownCommand(beg, end) => {
+                write!(f, "Unknown command at ({}, {})", beg, end)
+            },
+            ParseError::InvalidRange(beg, end) => write!(f, "Invalid range specification"),
+            ParseError::ZeroLengthSubst(index) => {
+                write!(f, "Zero-length substitution expression at {}", index)
+            },
+            // yes, unreachable... FOR NOW
+            _ => write!(f, "Unknown error!")
+        }
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct InvalidRule<'a> {
+    err: ParseError,
+    expr: &'a str,
+}
+
+
+impl<'a> InvalidRule<'a> {
+    pub fn from_parse_error(expr: &'a str, err: ParseError) -> Self {
+        InvalidRule {
+            err,
+            expr
+        }
+    }
+}
+
+impl<'a> fmt::Display for InvalidRule<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.err {
+            ParseError::InvalidRange(beg, end) => {
+                write!(f, "{}", self.expr)?;
+                write!(f, "{}^--{}", " ".repeat(beg), "Invalid range")
+            },
+            ParseError::UnbalancedBrackets => {
+                write!(f, "Unbalanced brackets in `{}`", self.expr)
+            },
+            ParseError::InvalidExpression(beg, end) => {
+                write!(f, "{}", self.expr)?;
+                write!(f, "{}^--{}", " ".repeat(beg), "Invalid expression")
+            },
+            _ => {
+                write!(f, "{}\n", self.expr)?;
+                write!(f, " ^ -- {}", self.err)
+            }
+        }
+    }
+}
+
+
 #[derive(Debug)]
 pub enum AnnalsFailure {
     UnknownCognate {
