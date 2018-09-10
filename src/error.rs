@@ -143,3 +143,11 @@ impl Error for AnnalsFailure {
         "Error"
     }
 }
+
+impl From<ParseError> for AnnalsFailure {
+    fn from(parse_err: ParseError) -> Self {
+        AnnalsFailure::ParsingError{
+            msg: format!("{:?}", parse_err)
+        }
+    }
+}

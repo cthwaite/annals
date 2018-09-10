@@ -3,7 +3,7 @@
 #[macro_use] extern crate failure;
 extern crate rand;
 extern crate regex;
-extern crate lazy_static;
+#[macro_use] extern crate lazy_static;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_yaml;
@@ -20,13 +20,13 @@ mod error;
 mod group;
 mod parse;
 mod rule;
-mod template;
 pub mod context;
 
 use error::AnnalsFailure;
 pub use context::Context;
 use group::{Group, GroupListIter};
-use template::{Token, Template};
+use rule::Rule;
+use parse::Token;
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -120,27 +120,27 @@ impl Scribe {
     /// Generate text from a named Cognate.
     pub fn gen(&self, cognate: &str) -> Result<String, AnnalsFailure> {
         let mut context = Context::new();
-        let template = self.select_template(cognate, &mut context)?;
-        self.expand_tokens(&template.tokens, &mut context)
+        let sel = self.select_rule(cognate, &mut context)?;
+        self.expand_tokens(sel.tokens(), &mut context)
     }
 
     /// Generate text from a named Cognate using the passed Context.
     pub fn gen_with(&self, cognate: &str, mut context: Context) -> Result<String, AnnalsFailure> {
-        let template = self.select_template(cognate, &mut context)?;
-        self.expand_tokens(&template.tokens, &mut context)
+        let sel = self.select_rule(cognate, &mut context)?;
+        self.expand_tokens(sel.tokens(), &mut context)
     }
 
     /// Generate text from the passed template string.
-    pub fn expand(&self, template: &str) -> Result<String, AnnalsFailure> {
-        let template = Template::from_string(template.to_owned())?;
+    pub fn expand(&self, rule: &str) -> Result<String, AnnalsFailure> {
+        let new_rule = Rule::new(rule)?;
         let mut context = Context::new();
-        self.expand_tokens(&template.tokens, &mut context)
+        self.expand_tokens(new_rule.tokens(), &mut context)
     }
 
     /// Generate text from the passed template string and Context.
-    pub fn expand_with(&self, template: &str, mut context: Context) -> Result<String, AnnalsFailure> {
-        let template = Template::from_string(template.to_owned())?;
-        self.expand_tokens(&template.tokens, &mut context)
+    pub fn expand_with(&self, rule: &str, mut context: Context) -> Result<String, AnnalsFailure> {
+        let new_rule = Rule::new(rule)?;
+        self.expand_tokens(new_rule.tokens(), &mut context)
     }
     /// Save this Scribe to a YAML file.
     pub fn save(&self, path: &str) -> Result<(), Error> {
@@ -156,7 +156,7 @@ impl Scribe {
     }
 
     /// Select a template from a named Cognate using the passed Context.
-    fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, AnnalsFailure> {
+    fn select_rule(&self, name: &str, context: &mut Context) -> Result<&Rule, AnnalsFailure> {
         match self.cognates.get(name) {
             Some(cognate) => {
                 if cognate.groups.is_empty() {
@@ -188,36 +188,6 @@ impl Scribe {
         }
     }
 
-    pub fn unspool(&self) -> Result<String, AnnalsFailure> {
-        let mut ctx = Context::new();
-        let template = self.select_template("root", &mut ctx)?;
-        self.unspool_impl(&template, &mut ctx).and_then(|cows| Ok(cows.join("")))
-    }
-
-    fn unspool_impl<'a>(&self, template: &'a Template, ctx: &mut Context) -> Result<Vec<Cow<'a, str>>, AnnalsFailure> {
-        let mut stack : Vec<&'a Token> = template.tokens.iter().rev().collect();
-        let mut out : Vec<Cow<'a, str>> = vec![];
-        while let Some(token) = stack.pop() {
-            match token {
-                Token::Literal(text) => out.push(text[..].into()),
-                Token::PropertyWithBindings{binds, name} => {
-                    for (key, val) in binds.iter() {
-                        if ctx.get_binding(key).is_some() {
-                            continue;
-                        }
-                        let template = self.select_template(val, ctx)?;
-                        let bind = self.unspool_impl(&template, ctx)?;
-                        ctx.bind(key, bind.join(""));
-                    }
-                    let _template = self.select_template(name, ctx)?;
-                    binds.iter().for_each(|(key, _)| ctx.unbind(key));
-                },
-                _ => ()
-            }
-        }
-        Ok(out)
-    }
-
     /// Expand an iterator over a sequence of Tokens into a String.
     #[inline]
     fn expand_tokens(&self, tokens: &[Token], context: &mut Context) -> Result<String, AnnalsFailure> {
@@ -232,20 +202,21 @@ impl Scribe {
         if let Some(bind) = context.get_binding(name) {
             return Ok(bind);
         }
-        let template = self.select_template(name, context)?;
-        self.expand_tokens(&template.tokens, context)
+        let sel = self.select_rule(name, context)?;
+        self.expand_tokens(sel.tokens(), context)
     }
 
     /// Recursively expand a token to a String.
     fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, AnnalsFailure> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
-            Token::PropertyWithBindings{binds, name} => {
+            Token::VariableAssignment(name, binds) => {
+                /*
                 for (key, val) in binds.iter() {
                     if context.get_binding(key).is_some() {
                         continue;
                     }
-                    let template = self.select_template(val, context)?;
+                    let template = self.select_rule(val, context)?;
                     let bind = self.expand_tokens(&template.tokens, context)?;
                     context.bind(key, bind);
                 }
@@ -255,20 +226,20 @@ impl Scribe {
                 // desirable to do so for tags as well.
                 binds.iter().for_each(|(key, _)| context.unbind(key));
                 ret
+                */
+                self.expand_name(name, context)
             },
-            Token::Property(name) => self.expand_name(name, context),
-            Token::Ident(name) => self.expand_name(name, context),
-            Token::Variable(name) => {
+            Token::NonTerminal(name) => self.expand_name(name, context),
+            Token::Binding(name) => {
                 if let Some(bind) = context.get_binding(name) {
                     return Ok(bind);
                 }
                 Err(AnnalsFailure::UnboundVariable{ name: name.clone() }.into())
             },
-            Token::Range{lower, upper} => {
+            Token::Range(lower, upper) => {
                 Ok(thread_rng().gen_range(*lower, *upper).to_string())
             },
-            Token::Binding(_) => unreachable!(),
-            Token::Unknown(content) => Err(AnnalsFailure::UnknownToken{ content: content.to_string() }.into())
+            _ => Err(AnnalsFailure::UnknownToken{ content: "Unknown token".into() }.into())
         }
     }
 }

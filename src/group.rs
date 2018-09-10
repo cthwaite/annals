@@ -1,6 +1,6 @@
 use failure::Error;
 use std::collections::HashMap;
-use template::{Template, template_list};
+use rule::{Rule, rule_list};
 
 fn always_false() -> bool {
     false
@@ -14,8 +14,8 @@ pub struct Group {
     bind: bool,
     #[serde(default)]
     pub tags: HashMap<String, String>,
-    #[serde(with="template_list")]
-    pub templates: Vec<Template>
+    #[serde(with="rule_list")]
+    pub rules: Vec<Rule>
 }
 
 impl Group {
@@ -24,31 +24,31 @@ impl Group {
             note: String::new(),
             bind: false,
             tags: HashMap::new(),
-            templates: vec![]
+            rules: vec![]
         }
     }
 
-    pub fn from_templates<T: AsRef<str>>(templates: &[T]) -> Result<Self, Error> {
-        let templates : Result<Vec<_>, _> = templates.iter().map(|lit| Template::new(lit.as_ref())).collect();
-        let templates = templates?;
+    pub fn from_templates<T: AsRef<str>>(rules: &[T]) -> Result<Self, Error> {
+        let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
+        let rules = rules.unwrap(); //rules?;
         Ok(Group {
             note: String::new(),
             bind: false,
             tags: HashMap::new(),
-            templates
+            rules
         })
     }
 
-    pub fn add_template(&mut self, template: &str) -> Result<(), Error> {
-        let tmp = Template::new(template)?;
-        self.templates.push(tmp);
+    pub fn add_template(&mut self, expr: &str) -> Result<(), Error> {
+        let tmp_rule = Rule::new(expr).unwrap();
+        self.rules.push(tmp_rule);
         Ok(())
     }
 
-    pub fn add_templates<T: AsRef<str>>(&mut self, templates: &[T]) -> Result<(), Error> {
-        let templates : Result<Vec<_>, _> = templates.iter().map(|lit| Template::new(lit.as_ref())).collect();
-        let templates = templates?;
-        self.templates.extend(templates.into_iter());
+    pub fn add_templates<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), Error> {
+        let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
+        let rules = rules.unwrap();
+        self.rules.extend(rules.into_iter());
         Ok(())
     }
 
@@ -60,15 +60,15 @@ impl Group {
 
 pub struct GroupListIter<'a> {
     groups: Vec<&'a Group>,
-    t_iter: ::std::slice::Iter<'a, Template>,
+    t_iter: ::std::slice::Iter<'a, Rule>,
     index: usize,
     pub size: usize
 }
 
 impl<'a> GroupListIter<'a> {
     pub fn new(groups: Vec<&'a Group>) -> Self {
-        let t_iter = groups.last().unwrap().templates.iter();
-        let size = groups.iter().map(|grp| grp.templates.len()).sum();
+        let t_iter = groups.last().unwrap().rules.iter();
+        let size = groups.iter().map(|grp| grp.rules.len()).sum();
         GroupListIter {
             groups,
             t_iter,
@@ -81,7 +81,7 @@ impl<'a> GroupListIter<'a> {
         self.groups.pop();
         match self.groups.last() {
             Some(group) => {
-                self.t_iter = group.templates.iter();
+                self.t_iter = group.rules.iter();
                 true
             },
             None => false
@@ -91,7 +91,7 @@ impl<'a> GroupListIter<'a> {
 
 
 impl<'a> Iterator for GroupListIter<'a> {
-    type Item = (&'a Template, &'a Group);
+    type Item = (&'a Rule, &'a Group);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
