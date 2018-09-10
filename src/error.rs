@@ -5,6 +5,7 @@ use serde::de;
 
 #[derive(Debug, Clone)]
 pub enum ParseError {
+    InternalError,
     InvalidExpression(usize, usize),
     InvalidName(usize, usize),
     InvalidRange(usize, usize),
