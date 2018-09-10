@@ -1,10 +1,9 @@
 #![allow(dead_code)]
 
 #[macro_use] extern crate failure;
-#[cfg(test)] #[macro_use] extern crate pest;
-#[cfg(not(test))] extern crate pest;
-#[macro_use] extern crate pest_derive;
 extern crate rand;
+extern crate regex;
+extern crate lazy_static;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_yaml;
@@ -18,10 +17,11 @@ use std::str::FromStr;
 
 
 mod error;
-pub mod context;
 mod group;
-mod parser;
+mod parse;
+mod rule;
 mod template;
+pub mod context;
 
 use error::AnnalsFailure;
 pub use context::Context;
@@ -276,6 +276,7 @@ impl Scribe {
 
 impl FromStr for Scribe {
     type Err = Error;
+
     /// Create a new Scribe from a YAML string.
     fn from_str(data: &str) -> Result<Self, Error> {
         serde_yaml::from_str(data).map_err(Into::into)
