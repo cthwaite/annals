@@ -1,0 +1,351 @@
+- name: battle
+  groups:
+  - rules:
+    - Battle of Henninger Gap
+    - Battle of Fellport
+    - Battle of the Four Navies
+    - Battle of Ingestadt
+    tags: {era: old}
+  - rules:
+    - Battle of New Carcosa
+    - Battle of Argyrian Straits
+    - Battle of Leufport
+    tags: {era: new}
+
+- name: battleaction
+  groups:
+  - rules:
+    - held the line in spite of assault from multiple enemy vessels
+    - was nearly sunk by enemy mortar fire
+  - rules:
+    - cunningly predicted an enemy submarine strike
+    - 'made a daring fast assault on the enemy position'
+    tags: {era: new, weight: light}
+  - rules:
+    - "sunk <#2-6> enemy vessels"
+    - withstood severe torpedo fire from enemy submarines
+    tags: {era: new, weight: heavy}
+  - rules:
+    - managed a crippling torpedo strike against the enemy flagship
+    - severely constrained enemy manoeuvering
+    - provided vital early reconnaissance
+    tags: {class: submarine, era: new}
+  - rules:
+    - was able to outrun her counterparts in the enemy fleet
+    - arrived rapidly at the engagement zone, to great effect
+    tags: {speed: fast}
+
+- name: boatspeed
+  groups:
+  - rules:
+    - '<#30-35>'
+    - '<#28-32>'
+    tags: {speed: fast}
+
+- name: class
+  groups:
+  - rules:
+    - corvette
+    tags: {weight: light, class: corvette, speed: fast, status: warship}
+  - rules:
+    - frigate
+    tags: {weight: light, class: frigate, status: warship}
+  - rules:
+    - cruiser
+    tags: {weight: heavy, class: cruiser, status: warship}
+  - rules:
+    - battleship
+    tags: {weight: heavy, class: battleship, status: warship}
+  - rules:
+    - submarine
+    tags: {class: submarine, era: new, propulsion: engine, status: warship}
+  - rules:
+    - galleon
+    tags: {class: freight, class: galleon, propulsion: sail, role: transport}
+  - rules:
+    - clipper
+    - freighter
+    tags: {class: freight, role: transport}
+
+- name: figurehead
+  groups:
+  - rules:
+    - a mermaid
+    - a seahorse
+    - an eagle
+    - a serpent
+    - a dragon
+    - a bolt of lightning
+
+- name: good
+  groups:
+  - rules: [silver, emeralds, ice spices, whale oil, voltaic jars]
+    tags: {route: argyria}
+  - rules: [fruit, sugar, cotton, rubber]
+    tags: {route: tetotl}
+
+- name: impeller
+  groups:
+  - rules:
+    - a bow-to-stern impelling screw
+    - a pair of powerful rear impellers
+    - side-mounted impelling screws
+    - a pair of catamaran hydrojets
+
+- name: guns
+  groups:
+  - rules:
+    - magnetodynamic howitzers
+    - oil-drum mortars
+    - a prow-to-stern siege portbuster
+    - 70mm gatlings
+    tags: {weight: heavy}
+  - rules:
+    - boarding razorwire
+    - shrapnel launchers
+    - small-bore cannons
+    - oil-drum depth charges
+    tags: {weight: light}
+  - rules:
+    - surface cannon
+    - siege torpedos
+    - '"battleship buster" torpedos'
+    - a hullcutter ram saw
+    tags: {class: submarine}
+  - rules:
+    - a voltaic thump device
+    - anti-personnel lightning arc generators
+    tags: {propulsion: engine, power: electric}
+
+- name: locale
+  groups:
+  - rules:
+    - Argyria
+    - Gloryport
+    - Icegap
+    - the frozen South
+    tags: {route: argyria}
+  - rules:
+    - Tetotl
+    - High Gloriana
+    - Las Cadres
+    - the Colonies
+    tags: {route: tetotl}
+
+- name: name
+  groups:
+  - note: Variants of 'brave'
+    rules:
+    - Brave
+    - Courageous
+    - Valiant
+    - Defiant
+    - Intrepid
+    - Fearless
+    - Audacious
+    - Mettlesome
+    - Bold
+    tags: {weight: light, status: warship}
+  - note: Variants of 'strong'
+    rules:
+    - Robust
+    - Fortified
+    - Indefatigable
+    - Powerful
+    - Indestructible
+    - Inescapable
+    - Invincible
+    - Unassailable
+    - Unsinkable
+    tags: {weight: heavy, status: warship}
+  - note: Freigher names
+    rules:
+    - Hind
+    - Golden Hind
+    - Dromedary
+    - Camel
+    - Reliable
+    - Drudge
+    tags: {class: freight, role: transport}
+  - rules:
+    - Silent
+    - Assassin
+    - Nocturnal
+    - Liquidator
+    - Slayer
+    - Dagger
+    - Knife
+    - Icepick
+    tags: {class: submarine, status: warship, era: new}
+  - rules:
+    - Voltaic
+    - Lightning
+    - Voulger
+    tags: {era: new, propulsion: engine, power: electric}
+  - rules:
+    - Empress Gloriana
+    tags: {era: new, weight: heavy, class: battleship, status: warship}
+  - rules:
+    - Emperor Maximus
+    tags: {weight: heavy, class: battleship, status: warship}
+
+
+- name: prefix
+  groups:
+  - rules:
+    - HMS
+    tags: {status: warship}
+  - rules:
+    - SS
+    tags: {status: civilian}
+
+- name: sailnumber
+  groups:
+    - rules:
+      - '<#8-16>'
+      tags: {weight: heavy}
+    - rules:
+      - '<#6-12>'
+      tags: {weight: light}
+    - rules:
+      - '<#7-13>'
+      tags: {class: freight}
+
+- name: war
+  groups:
+  - rules:
+    - Short War
+    tags: {era: new}
+  - rules:
+    - Long War
+    tags: {era: old}
+
+
+- name: when
+  groups:
+  - rules:
+    - '<#10-30> years ago'
+    - during the reign of the previous Emperor
+    tags: {era: old, propulsion: sail}
+  - rules:
+    - '<#2-8> years ago'
+    - during the reign of the young Empress
+    - last year
+    tags: {era: new, propulsion: engine}
+
+- name: wood
+  groups:
+    - rules:
+      - Argyrian whitewood
+      - Balaloc wood
+      - Edissian black mahogany
+
+- name: statement
+  groups:
+  - note: Generic statements
+    rules:
+    - She is considered by many to be a fine vessel, though her Captain less so.
+    - She makes infrequent appearances at the Capital's own port, preferring other waters.
+    - She is fairly graceful, for a ship of her class.
+    - She appeared at the last season's naval festival.
+  - rules:
+    - Her propulsion system is a novel one, running on electricity.
+    - She is fitted with port and stern battery banks, for greater reach.
+    - Her voltaic engines propel her through <impeller>.
+    tags: {propulsion: engine, power: electric, era: new}
+  - rules:
+    - Her mainmast was carved out of <wood>.
+    - She is fitted with <sailnumber> sails.
+    tags: {propulsion: sail, era: old}
+  - rules:
+    - During the <battle>, she <battleaction>.
+    tags: {status: warship, role: combat, battle: ""}
+  - rules:
+    - She is currently serving as a colonial troop transport.
+    tags: {status: warship, role: transport}
+  - rules:
+    - Using a whale oil engine, she can reach speeds upwards of <boatspeed> knots.
+    - Her powerful oil-boiler engines operate <impeller>.
+    tags: {propulsion: engine, propulsion: combustion, era: new}
+  - rules:
+    - She served as the flagship of the Second Fleet during the <battle>.
+    tags: { weight: heavy, class: battleship }
+  - rules:
+    - The Admiralty commissioned her novel design from Gloryx Voulger, and she eventually
+      became the template for the <name> class.
+    - Though originally built as a prototype, she is currently in service.
+    tags: { propulsion: engine, era: new, weight: light }
+  - rules:
+    - Next year, she is due to be decommissioned.
+    - A consortium of history enthusiasts has agreed to purchase her for a naval museum
+      in Argyria.
+    tags: {era: old}
+  - rules:
+    - Customarily, she arrives on port laden with <good> from <locale>.
+    tags: {class: freight, role: transport, status: civilian}
+  - rules:
+    - Her crew has a history of breaking in combat.
+    - Her crew is a raucous and drunken lot, known for disgracing themselves on leave.
+    tags: {crew: bad}
+  - rules:
+    - The crew contains veterans of both the Long and Short wars.
+    - Her crew is known to be one of the more disciplined in the Navy.
+    tags: {crew: good, status: warship}
+  - rules:
+    - She is built in the Argyrian style, with her stern low to the water.
+    - She has graceful fluted sides.
+    - A figurehead in the shape of <figurehead> stands at her bow.
+    - Her bowline is painted an unusual shade of yellow.
+    tags: {style: ""}
+  - rules:
+    - She bears the scars of numerous engagements during the <war>.
+    tags: {role: combat}
+  - rules:
+    - She has an icebreaker prow, for navigating the frigid waters of the frozen South.
+    tags: {route: argyria, role: transport, style: ""}
+  - rules:
+    - Though her structure is in <wood>, her hull is surrounded in greenish copper
+      cladding.
+    - Numerous sailors have carved notches into her deck railing, denoting enemy vessels
+      sunk in battle.
+    tags: {era: old, role: combat, style: ""}
+  - rules:
+    - Frigates like the <name> are commonly used to harass enemy shipping.
+    - The <name>, like other frigates, is one of the smaller combat warships in the
+      fleet.
+    tags: {weight: light, class: frigate}
+  - rules:
+    - A corvette like the <name> is primarily concerned with minor engagements.
+    tags: {weight: light, class: corvette}
+  - rules:
+    - Submarines like the <name> are often crewed by small, wiry men who do well in
+      tight spaces.
+    tags: {class: submarine, era: new, crew: ""}
+  - rules:
+    - The submarine, a recent invention, has revolutionised naval combat.
+    tags: {class: submarine, era: new, history: ""}
+  - rules:
+    - Sailing vessels like the <name> were common, up until companies like Voulger
+      Dynamics began bringing oil and voltaic engines to seafaring ships.
+    tags: {propulsion: sail, history: "", era: old}
+  - rules:
+    - The <name> is one of the new generation of vessels built to fight against the
+      Arkodian fleet in the Short War.
+    - The <name> incorporates technologies developed to counteract Arkodian naval power.
+    tags: {era: new, history: "", status: warship}
+  - rules:
+    - She is fitted with <guns>.
+    tags: {armament: "", role: combat, era: new}
+  - rules:
+    - 'In her day, the <name> carried <#12-46> guns to a broadside, plus mortars and
+       swivels.'
+    tags: {armament: "", role: combat, era: old}
+
+
+- name: graph
+  groups:
+  - rules: ['<statement> <statement> <statement> <statement>']
+
+- name: root
+  groups:
+    - rules: ["The <prefix> <!name> is a <class> commissioned <when>. <graph>"]
