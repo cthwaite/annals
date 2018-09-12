@@ -51,16 +51,12 @@ fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseErro
     Ok(Token::Expression(cmd, Box::new(tok)))
 }
 
+/// Parse a range expression.
 fn parse_range(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
-    /*
-    lazy_static! {
-        static ref PARSE_RANGE: Regex = Regex::new(r#"#(\d+)-(\d+)"#).unwrap();
-    }
-    */
     if let Some(index) = expr.find("-") {
         let (l_str, u_str) = expr.split_at(index);
         let lower = l_str.parse::<usize>();
-        let upper = u_str.parse::<usize>();
+        let upper = u_str[1..].parse::<usize>();
         if !lower.is_ok() || !upper.is_ok() {
             return Err(ParseError::InvalidRange(beg, end));
         }
@@ -69,7 +65,8 @@ fn parse_range(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> 
     Err(ParseError::InvalidRange(beg, end))
 }
 
-fn parse_variable(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
+
+fn parse_variable(expr: &str, _beg: usize, _end: usize) -> Result<Token, ParseError> {
     if let Some(index) = expr.find(":") {
         let (vname, ntname) = expr.split_at(index);
         Ok(Token::VariableAssignment(vname.to_string(), ntname.to_string()))
@@ -81,7 +78,7 @@ fn parse_variable(expr: &str, beg: usize, end: usize) -> Result<Token, ParseErro
 /// Validate and create a Token from an expression string.
 fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
     lazy_static! {
-        static ref VALIDATE_NAME: Regex = Regex::new(r#"^[@|!]?[A-Za-z0-9_]{2,}$"#).unwrap();
+        static ref VALIDATE_NAME: Regex = Regex::new(r##"^[@!$#]?[A-Za-z0-9_-]{2,}$"##).unwrap();
     }
     let initial = &expr[0..1];
     match initial {
@@ -93,6 +90,7 @@ fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Toke
         },
         _ => {
             if !VALIDATE_NAME.is_match(expr) {
+                println!("expr: {}", expr);
                 return Err(ParseError::InvalidName(beg, end));
             }
             match initial {
