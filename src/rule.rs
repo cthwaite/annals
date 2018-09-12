@@ -14,6 +14,7 @@ pub struct Rule {
 
 
 impl Rule {
+    /// Create a rule from a &str.
     pub fn new(expr: &str) -> Result<Self, ParseError> {
         let literal = expr.into();
         let tokens = make_expr(expr)?;
@@ -23,6 +24,7 @@ impl Rule {
         })
     }
 
+    /// Create a Rule by consuming a String.
     pub fn from_string(literal: String) -> Result<Self, ParseError> {
         let tokens = make_expr(&literal)?;
         Ok(Rule {
@@ -46,6 +48,7 @@ impl Rule {
         &self.literal
     }
 
+    /// Get the Tokens in the Rule as a slice.
     pub fn tokens(&self) -> &[Token] {
         &self.tokens
     }
