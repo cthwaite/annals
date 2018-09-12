@@ -27,7 +27,7 @@ pub use context::Context;
 use cognate::Cognate;
 use error::AnnalsFailure;
 use group::GroupListIter;
-use parse::Token;
+use parse::{Command, Token};
 use rule::Rule;
 
 
@@ -177,31 +177,66 @@ impl Scribe {
     fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, AnnalsFailure> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
-            Token::VariableAssignment(name, binds) => {
-                /*
-                for (key, val) in binds.iter() {
-                    if context.get_binding(key).is_some() {
-                        continue;
-                    }
-                    let template = self.select_rule(val, context)?;
-                    let bind = self.expand_tokens(&template.tokens, context)?;
-                    context.bind(key, bind);
-                }
-                let ret = self.expand_name(name, context);
-                // TODO: exiting the 'scope' of a property, we drop the
-                // property's bindings, but bindings, but it may be _optionally_
-                // desirable to do so for tags as well.
-                binds.iter().for_each(|(key, _)| context.unbind(key));
-                ret
-                */
-                self.expand_name(name, context)
-            },
             Token::NonTerminal(name) => self.expand_name(name, context),
+            Token::StickyNonTerminal(name) => {
+                self.expand_name(name, context)
+                    .and_then(|ret| {
+                        context.bind(name, &ret);
+                        Ok(ret)
+                    })
+            },
             Token::Binding(name) => {
                 if let Some(bind) = context.get_binding(name) {
                     return Ok(bind);
                 }
                 Err(AnnalsFailure::UnboundVariable{ name: name.clone() }.into())
+            },
+            Token::Expression(cmd, token) => {
+                match cmd {
+                    Command::Capitalize => {
+                        self.handle_token(token, context)
+                            .and_then(|ret| {
+                                let mut chs = ret.chars();
+                                match chs.next() {
+                                    Some(t) => Ok(t.to_uppercase().chain(chs).collect()),
+                                    None => Ok("".to_string())
+                                }
+                            })
+                    },
+                    Command::Lowercase => self.handle_token(token, context)
+                                              .and_then(|ret| Ok(ret.to_lowercase())),
+                    Command::Titlecase => self.handle_token(token, context),
+                    Command::IndefiniteArticle => {
+                        self.handle_token(token, context)
+                            .and_then(|ret| {
+                                match &ret.chars().next() {
+                                    // TODO: Stopgap; replace.
+                                    Some(ch) => {
+                                        match ch {
+                                            'a' | 'e' | 'i' | 'o' | 'u' |
+                                            'A' | 'E' | 'I' | 'O' | 'U' => Ok(format!("an {}", ret)),
+                                            _ => Ok(format!("a {}", ret)),
+                                        }
+                                    },
+                                    None => Ok("".to_string()),
+                                }
+                            })
+                    },
+                }
+            },
+            Token::VariableAssignment(name, bind) => {
+                if context.get_binding(name).is_some() {
+                    return Ok("".to_string())
+                }
+                let srule = self.select_rule(bind, context)?;
+                let bind = self.expand_tokens(srule.tokens(), context)?;
+                context.bind(name, &bind);
+                let ret = self.expand_name(name, context);
+                // TODO: exiting the 'scope' of a property, we drop the
+                // property's bindings, but bindings, but it may be _optionally_
+                // desirable to do so for tags as well.
+                context.unbind(name);
+                ret
             },
             Token::Range(lower, upper) => {
                 Ok(thread_rng().gen_range(*lower, *upper).to_string())
