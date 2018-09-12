@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 use group::Group;
+use std::collections::VecDeque;
+
 
 #[derive(Debug, Default)]
 pub struct Context {
     pub tags: HashMap<String, String>,
-    bindings: HashMap<String, String>
+    bindings: HashMap<String, String>,
+    unpop: VecDeque<Vec<String>>
 }
 
 impl Context {
@@ -12,6 +15,7 @@ impl Context {
         Context {
             tags,
             bindings,
+            unpop: VecDeque::default(),
         }
     }
 
@@ -20,6 +24,7 @@ impl Context {
         Context {
             tags,
             bindings: HashMap::default(),
+            unpop: VecDeque::default(),
         }
     }
 
@@ -28,6 +33,22 @@ impl Context {
         Context {
             tags: HashMap::default(),
             bindings,
+            unpop: VecDeque::default(),
+        }
+    }
+
+    pub fn descend(&mut self) {
+        self.unpop.push_back(vec![]);
+    }
+
+    pub fn ascend(&mut self) {
+        match self.unpop.pop_back() {
+            Some(vec) => {
+                for name in vec {
+                    self.unbind(name);
+                }
+            },
+            None => ()
         }
     }
 
@@ -46,6 +67,10 @@ impl Context {
     /// Add a binding.
     pub fn bind<T: AsRef<str>>(&mut self, key: T, value: T) {
         self.bindings.insert(key.as_ref().to_string(), value.as_ref().to_string());
+        match self.unpop.back_mut() {
+            Some(vec) => vec.push(key.as_ref().to_string()),
+            None => ()
+        }
     }
 
     /// Remove a binding.

@@ -39,7 +39,7 @@ pub struct Scribe {
 impl Scribe {
     pub fn new() -> Self {
         Scribe {
-            cognates: HashMap::new(),
+            cognates: HashMap::default(),
         }
     }
 
@@ -166,11 +166,14 @@ impl Scribe {
     }
 
     fn expand_name(&self, name: &str, context: &mut Context) -> Result<String, AnnalsFailure> {
+        context.descend();
         if let Some(bind) = context.get_binding(name) {
             return Ok(bind);
         }
         let sel = self.select_rule(name, context)?;
-        self.expand_tokens(sel.tokens(), context)
+        let ret = self.expand_tokens(sel.tokens(), context);
+        context.ascend();
+        ret
     }
 
     /// Recursively expand a token to a String.
@@ -253,5 +256,34 @@ impl FromStr for Scribe {
     /// Create a new Scribe from a YAML string.
     fn from_str(data: &str) -> Result<Self, Error> {
         serde_yaml::from_str(data).map_err(Into::into)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_pop_descend() {
+        const YAML_STR : &str = r#"
+        ---
+        - name: root
+          groups:
+          - rules:
+            - A <B> <C>
+        - name: B
+          groups:
+          - rules
+            - B <!C>
+        - name: C
+          groups:
+          - rules
+            - C
+            - D
+        "#;
+        let mut scr = Scribe::new();
+        scr.load_cognates_str(YAML_STR).unwrap();
+        let r = scribe.gen("root").unwrap();
+        assert_eq!(r, "A B C D");
     }
 }
