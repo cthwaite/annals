@@ -28,8 +28,8 @@ impl Context {
     }
 
     /// Add a binding.
-    pub fn bind(&mut self, key: &str, value: String) {
-        self.bindings.insert(key.to_string(), value);
+    pub fn bind<T: AsRef<str>>(&mut self, key: T, value: T) {
+        self.bindings.insert(key.as_ref().to_string(), value.as_ref().to_string());
     }
 
     pub fn unbind<T: AsRef<str>>(&mut self, key: T) {
@@ -37,10 +37,7 @@ impl Context {
     }
 
     pub fn get_binding(&mut self, key: &str) -> Option<String> {
-        if self.bindings.contains_key(key) {
-            return Some(self.bindings[key].clone());
-        }
-        None
+        self.bindings.get(key).cloned()
     }
 
     /// Check if a group's tags match the tags in this Context.
