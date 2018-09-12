@@ -28,7 +28,7 @@ impl fmt::Display for ParseError {
             ParseError::UnknownCommand(beg, end) => {
                 write!(f, "Unknown command at ({}, {})", beg, end)
             },
-            ParseError::InvalidRange(beg, end) => write!(f, "Invalid range specification"),
+            ParseError::InvalidRange(beg, end) => write!(f, "Invalid range specification at ({}, {})", beg, end),
             ParseError::ZeroLengthSubst(index) => {
                 write!(f, "Zero-length substitution expression at {}", index)
             },
@@ -58,14 +58,14 @@ impl<'a> InvalidRule<'a> {
 impl<'a> fmt::Display for InvalidRule<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.err {
-            ParseError::InvalidRange(beg, end) => {
+            ParseError::InvalidRange(beg, _end) => {
                 write!(f, "{}", self.expr)?;
                 write!(f, "{}^--{}", " ".repeat(beg), "Invalid range")
             },
             ParseError::UnbalancedBrackets => {
                 write!(f, "Unbalanced brackets in `{}`", self.expr)
             },
-            ParseError::InvalidExpression(beg, end) => {
+            ParseError::InvalidExpression(beg, _end) => {
                 write!(f, "{}", self.expr)?;
                 write!(f, "{}^--{}", " ".repeat(beg), "Invalid expression")
             },
