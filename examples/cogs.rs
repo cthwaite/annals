@@ -11,7 +11,7 @@ fn main() {
         println!("{}", scribe.gen("root").unwrap());
     }
     println!("{}", scribe.gen("root").unwrap());
-    let mut ctx = Context::new();
+    let mut ctx = Context::default();
     ctx.set("colour", "red");
     println!("{}", scribe.gen_with("root", ctx).unwrap());
 }
