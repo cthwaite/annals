@@ -10,59 +10,26 @@ extern crate serde_yaml;
 
 use failure::Error;
 use rand::prelude::*;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::str::FromStr;
 
 
+mod cognate;
 mod error;
 mod group;
 mod parse;
 mod rule;
 pub mod context;
 
-use error::AnnalsFailure;
 pub use context::Context;
-use group::{Group, GroupListIter};
-use rule::Rule;
+
+use cognate::Cognate;
+use error::AnnalsFailure;
+use group::GroupListIter;
 use parse::Token;
+use rule::Rule;
 
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Cognate {
-    pub name: String,
-    groups: Vec<Group>
-}
-
-
-impl Cognate {
-    pub fn new<S> (name: S) -> Self where S: Into<String> {
-        Cognate {
-            name: name.into(),
-            groups: vec![]
-        }
-    }
-
-    /// Create a new Cognate from a YAML file.
-    pub fn from_yaml(path: &str) -> Result<Self, Error> {
-        let f = File::open(path)?;
-        serde_yaml::from_reader(f).map_err(Into::into)
-    }
-
-    /// Create a new group from the passed slice of Templates.
-    pub fn group_from_templates<T: AsRef<str>>(&mut self, templates: &[T]) -> Result<(), Error> {
-        let grp = Group::from_templates(templates)?;
-        self.groups.push(grp);
-        Ok(())
-    }
-
-    /// Add a new Group to this Cognate.
-    pub fn add_group(&mut self) -> Option<&mut Group> {
-        self.groups.push(Group::new());
-        self.groups.last_mut()
-    }
-}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Scribe {
@@ -119,7 +86,7 @@ impl Scribe {
 
     /// Generate text from a named Cognate.
     pub fn gen(&self, cognate: &str) -> Result<String, AnnalsFailure> {
-        let mut context = Context::new();
+        let mut context = Context::default();
         let sel = self.select_rule(cognate, &mut context)?;
         self.expand_tokens(sel.tokens(), &mut context)
     }
@@ -133,7 +100,7 @@ impl Scribe {
     /// Generate text from the passed template string.
     pub fn expand(&self, rule: &str) -> Result<String, AnnalsFailure> {
         let new_rule = Rule::new(rule)?;
-        let mut context = Context::new();
+        let mut context = Context::default();
         self.expand_tokens(new_rule.tokens(), &mut context)
     }
 
@@ -159,12 +126,12 @@ impl Scribe {
     fn select_rule(&self, name: &str, context: &mut Context) -> Result<&Rule, AnnalsFailure> {
         match self.cognates.get(name) {
             Some(cognate) => {
-                if cognate.groups.is_empty() {
+                if cognate.is_empty() {
                     return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
                 }
-                let groups = cognate.groups.iter()
-                                           .filter(|grp| context.accept(grp))
-                                           .collect::<Vec<_>>();
+                let groups = cognate.iter_groups()
+                                    .filter(|grp| context.accept(grp))
+                                    .collect::<Vec<_>>();
                 if groups.is_empty() {
                     let context = format!("{:?}", context.tags);
                     return Err(AnnalsFailure::NoSuitableGroups{name: name.to_string(), context}.into());
