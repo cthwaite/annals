@@ -224,6 +224,9 @@ impl Scribe {
                     },
                 }
             },
+            Token::Range(lower, upper) => {
+                Ok(thread_rng().gen_range(*lower, *upper).to_string())
+            },
             Token::VariableAssignment(name, bind) => {
                 if context.get_binding(name).is_some() {
                     return Ok("".to_string())
@@ -237,9 +240,6 @@ impl Scribe {
                 // desirable to do so for tags as well.
                 context.unbind(name);
                 ret
-            },
-            Token::Range(lower, upper) => {
-                Ok(thread_rng().gen_range(*lower, *upper).to_string())
             },
             _ => Err(AnnalsFailure::UnknownToken{ content: "Unknown token".into() }.into())
         }
