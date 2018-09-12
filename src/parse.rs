@@ -19,13 +19,6 @@ pub enum Token {
     Expression(Command, Box<Token>),
     Range(usize, usize),
     VariableAssignment(String, String),
-    /*
-    Property(String),
-    PropertyWithBindings{binds: Vec<(String, String)>, name: String},
-    Variable(String),
-    Binding((String, String)),
-    Unknown(String)
-    */
 }
 
 
