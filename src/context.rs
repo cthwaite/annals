@@ -15,6 +15,22 @@ impl Context {
         }
     }
 
+    /// Create a new Context with the given tags.
+    pub fn with_tags(tags: HashMap<String, String>) -> Self {
+        Context {
+            tags,
+            bindings: HashMap::default(),
+        }
+    }
+
+    /// Create a new Context with the given bindings.
+    pub fn with_bindings(bindings: HashMap<String, String>) -> Self {
+        Context {
+            tags: HashMap::default(),
+            bindings,
+        }
+    }
+
     /// Merge tags from a Group into this context.
     pub fn merge_from_group(&mut self, group: &Group) {
         for (key, value) in &group.tags {
