@@ -8,10 +8,10 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new() -> Self {
+    pub fn new(tags: HashMap<String, String>, bindings: HashMap<String, String>) -> Self {
         Context {
-            tags: HashMap::default(),
-            bindings: HashMap::default()
+            tags,
+            bindings,
         }
     }
 
@@ -32,10 +32,12 @@ impl Context {
         self.bindings.insert(key.as_ref().to_string(), value.as_ref().to_string());
     }
 
+    /// Remove a binding.
     pub fn unbind<T: AsRef<str>>(&mut self, key: T) {
         self.bindings.remove(key.as_ref());
     }
 
+    /// Get the value for a binding, if any.
     pub fn get_binding(&mut self, key: &str) -> Option<String> {
         self.bindings.get(key).cloned()
     }
@@ -48,6 +50,5 @@ impl Context {
         !self.tags.iter()
                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
                  .any(|(ref key, val)| group.tags[*key] != **val)
-
     }
 }
