@@ -40,56 +40,13 @@ impl fmt::Display for ParseError {
 }
 
 
-#[derive(Debug, Clone)]
-pub struct InvalidRule<'a> {
-    err: ParseError,
-    expr: &'a str,
-}
-
-
-impl<'a> InvalidRule<'a> {
-    pub fn from_parse_error(expr: &'a str, err: ParseError) -> Self {
-        InvalidRule {
-            err,
-            expr
-        }
-    }
-}
-
-impl<'a> fmt::Display for InvalidRule<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.err {
-            ParseError::InvalidRange(beg, _end) => {
-                write!(f, "{}", self.expr)?;
-                write!(f, "{}^--{}", " ".repeat(beg), "Invalid range")
-            },
-            ParseError::UnbalancedBrackets => {
-                write!(f, "Unbalanced brackets in `{}`", self.expr)
-            },
-            ParseError::InvalidExpression(beg, _end) => {
-                write!(f, "{}", self.expr)?;
-                write!(f, "{}^--{}", " ".repeat(beg), "Invalid expression")
-            },
-            _ => {
-                write!(f, "{}\n", self.expr)?;
-                write!(f, " ^ -- {}", self.err)
-            }
-        }
-    }
-}
-
-
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum AnnalsFailure {
     UnknownCognate {
         name: String,
     },
     EmptyCognate {
         name: String,
-    },
-    InvalidTemplate {
-        template: String,
-        error: String
     },
     NoSuitableGroups {
         name: String,
@@ -98,57 +55,82 @@ pub enum AnnalsFailure {
     UnknownToken {
         content: String,
     },
-
     UnboundVariable {
         name: String
     },
-
-    ParsingError {
+    SerdeError {
         msg: String
     },
-
+    InvalidRule {
+        err: ParseError,
+        expr: String
+    },
     UnknownError
 }
 
+impl AnnalsFailure {
+    pub fn from_invalid_rule(expr: String, err: ParseError) -> Self {
+        AnnalsFailure::InvalidRule {
+            err,
+            expr
+        }
+    }
+}
+
+/// Handler for transforming de::Error.
 impl de::Error for AnnalsFailure {
     fn custom<T: Display>(msg: T) -> Self {
-        AnnalsFailure::ParsingError{msg: msg.to_string()}
+        AnnalsFailure::SerdeError{msg: msg.to_string()}
     }
 }
 
 impl Display for AnnalsFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AnnalsFailure::UnknownCognate{name} => 
-                write!(formatter, "No groups in cognate: {}", name),
-            AnnalsFailure::EmptyCognate{name} => 
-                write!(formatter, "No groups in cognate: {}", name),
-            AnnalsFailure::InvalidTemplate{error, ..} =>
-                write!(formatter, "{}", error),
-            AnnalsFailure::NoSuitableGroups{name, context} =>
-                write!(formatter, "No suitable groups for {} in context: {}", name, context),
-            AnnalsFailure::UnknownToken{content} => 
-                write!(formatter, "Unknown token: {}", content),
-            AnnalsFailure::UnboundVariable{name} => 
-                write!(formatter, "Unbound variable: {}", name),
-            AnnalsFailure::ParsingError{msg} =>
-                write!(formatter, "Parsing error: {}", msg),
+            AnnalsFailure::UnknownCognate{name} => write!(formatter, "Unknown cognate: {}", name),
+            AnnalsFailure::EmptyCognate{name} => write!(formatter, "No groups in cognate: {}", name),
+            AnnalsFailure::NoSuitableGroups{name, context} => write!(formatter, "No suitable groups for {} in context: {}", name, context),
+            AnnalsFailure::UnknownToken{content} => write!(formatter, "Unknown token: {}", content),
+            AnnalsFailure::UnboundVariable{name} => write!(formatter, "Unbound variable: {}", name),
+            AnnalsFailure::SerdeError{msg} => write!(formatter, "{}", msg),
+            AnnalsFailure::InvalidRule{ err, expr } => format_invalid_rule(formatter, err, expr),
             AnnalsFailure::UnknownError => write!(formatter, "Unknown error")
         }
     }
 }
 
+/// Format ParseError emitted by an invalid rule.
+/// Because these will be run through serde, we prepend a newline so that errors
+/// will end up looking something like:
+/// ```bash
+/// .[0].groups[0]:
+/// <)>
+///  ^--Invalid name at (1, 2) at line 5 column 10
+/// ```
+fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &String) -> fmt::Result {
+    write!(f, "\n")?;
+    match err {
+        ParseError::InternalError => {
+            write!(f, "Unknown internal error while parsing:\n    {}", expr)
+        },
+        ParseError::InvalidExpression(beg, _end)
+        | ParseError::InvalidName(beg, _end)
+        | ParseError::InvalidRange(beg, _end)
+        | ParseError::UnknownCommand(beg, _end)
+        | ParseError::ZeroLengthSubst(beg, _end) => {
+            write!(f, "{}\n", expr)?;
+            write!(f, "{}^-- {}", " ".repeat(*beg), err)
+        },
+        ParseError::UnbalancedBrackets => {
+            write!(f, "Unbalanced brackets in rule:\n    {}", expr)
+        },
+    }
+}
+
+
 impl Error for AnnalsFailure {
     /// This is soft-deprecated, so let Display do the heavy lifting.
     fn description(&self) -> &str {
         "Error"
-    }
-}
-
-impl From<ParseError> for AnnalsFailure {
-    fn from(parse_err: ParseError) -> Self {
-        AnnalsFailure::ParsingError{
-            msg: format!("{:?}", parse_err)
-        }
     }
 }
