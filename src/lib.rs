@@ -130,11 +130,13 @@ impl Scribe {
                     return Err(AnnalsFailure::EmptyCognate{name: name.to_string()});
                 }
                 let groups = cognate.iter_groups()
-                                    .filter(|grp| context.accept(grp))
+                                    .filter(|grp| context.accept_strict(grp))
                                     .collect::<Vec<_>>();
                 if groups.is_empty() {
-                    let context = format!("{:?}", context.tags);
-                    return Err(AnnalsFailure::NoSuitableGroups{name: name.to_string(), context}.into());
+                    return Err(AnnalsFailure::NoSuitableGroups{
+                        name: name.to_string(),
+                        context: format!("{:?}", context.tags)
+                    });
                 }
                 let mut templates = GroupListIter::new(groups);
                 if templates.size == 0 {
