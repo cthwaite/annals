@@ -31,11 +31,21 @@ impl Group {
         }
     }
 
-    /// Create a new group of rules from 
-        let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
-        // TODO: this should be ?
-        let rules = rules.unwrap();
+    /// Get the number of rules in the Group.
+    pub fn len(&self) -> usize {
+        self.rules.len()
+    }
+
+    /// Create a new `Group` from a slice of strings.
+    ///
+    /// # Arguments
+    /// * `rules` - Slice of `String` or `&str` which will be parsed as `Rule`s.
+    ///
     pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, AnnalsFailure> {
+        let rules : Result<Vec<_>, _> = rules.iter()
+                                             .map(|lit| Rule::new(lit.as_ref()))
+                                             .collect();
+        let rules = rules?;
         Ok(Group {
             note: String::new(),
             bind: false,
@@ -45,23 +55,33 @@ impl Group {
     }
 
     /// Add a rule to this group.
-        // TODO: this should be ?
-        let tmp_rule = Rule::new(expr).unwrap();
+    /// # Arguments
+    /// * `expr`: String slice to be parsed as a `Rule`.
+    ///
     pub fn add_rule(&mut self, expr: &str) -> Result<(), AnnalsFailure> {
+        let tmp_rule = Rule::new(expr)?;
         self.rules.push(tmp_rule);
         Ok(())
     }
 
     /// Add a list of rules to this Group.
+    ///
+    /// # Arguments
+    /// * `rules` - Slice of `String` or `&str` which will be parsed as rules.
+    ///
     pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), AnnalsFailure> {
         let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
-        // TODO: this should be ?
-        let rules = rules.unwrap();
+        let rules = rules?;
         self.rules.extend(rules.into_iter());
         Ok(())
     }
 
     /// Set a tag for this group.
+    ///
+    /// # Arguments
+    /// * `key` - Tag key.
+    /// * `val` - Tag value.
+    ///
     pub fn set_tag(&mut self, key: &str, val: &str) {
         self.tags.insert(key.to_string(), val.to_string());
     }
