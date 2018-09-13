@@ -283,9 +283,6 @@ mod test {
         );
         evaluates_to!("<(an (cap animal))>",
                       [Token::Expression(Command::IndefiniteArticle, inner)]);
-
-        // this would currently fail with 'invalid name'
-        // make_expr("<(an (an (an (an animal)))))>").unwrap();
     }
 
     #[test]
@@ -293,10 +290,9 @@ mod test {
         evaluates_to!("<#39-100>", [Token::Range(39, 100)]);
     }
 
-
     #[test]
     fn test_err_empty_token() {
-        should_fail_with!("<>", ParseError::ZeroLengthSubst(1, 2));
+        should_fail_with!("<>", ParseError::ZeroLengthSubst(1, 1));
         should_fail_with!("<@>", ParseError::InvalidName(1, 2));
         should_fail_with!("<!>", ParseError::InvalidName(1, 2));
         should_fail_with!("<()>", ParseError::ZeroLengthSubst(2, 3));
@@ -304,9 +300,9 @@ mod test {
 
     #[test]
     fn test_err_zero_length() {
-        should_fail_with!("Zero-length <>", ParseError::ZeroLengthSubst(13, 14));
+        should_fail_with!("Zero-length <>", ParseError::ZeroLengthSubst(13, 13));
         should_fail_with!("Zero-length <> unaffected by post-string",
-                          ParseError::ZeroLengthSubst(13, 14));
+                          ParseError::ZeroLengthSubst(13, 13));
     }
 
     #[test]
