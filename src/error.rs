@@ -19,16 +19,17 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::InvalidExpression(beg, end) => {
-                write!(f, "Invalid expression at ({}, {})", beg, end)
+                write!(f, "Invalid expression ({}, {})", beg, end)
             },
             ParseError::InvalidName(beg, end) => {
-                write!(f, "Invalid name at ({}, {})", beg, end)
+                write!(f, "Invalid name ({}, {})", beg, end)
             },
             ParseError::UnbalancedBrackets => write!(f, "Unbalanced brackets in expr"),
             ParseError::UnknownCommand(beg, end) => {
-                write!(f, "Unknown command at ({}, {})", beg, end)
+                write!(f, "Unknown command ({}, {})", beg, end)
             },
-            ParseError::InvalidRange(beg, end) => write!(f, "Invalid range specification at ({}, {})", beg, end),
+            ParseError::InvalidRange(beg, end) =>
+                write!(f, "Invalid range specification ({}, {})", beg, end),
             ParseError::ZeroLengthSubst(beg, end) => {
                 write!(f, "Zero-length substitution expression ({}, {})", beg, end)
             },
