@@ -290,7 +290,7 @@ mod test {
 
     #[test]
     fn test_range() {
-        evaluates_to!("<#39-100>", Token::Range(39, 100));
+        evaluates_to!("<#39-100>", [Token::Range(39, 100)]);
     }
 
 
