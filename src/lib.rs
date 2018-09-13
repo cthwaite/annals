@@ -15,12 +15,12 @@ use std::fs::File;
 use std::str::FromStr;
 
 
-mod cognate;
-mod error;
-mod group;
 mod parse;
-mod rule;
+pub mod cognate;
 pub mod context;
+pub mod error;
+pub mod group;
+pub mod rule;
 
 pub use context::Context;
 
