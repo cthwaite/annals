@@ -259,32 +259,3 @@ impl FromStr for Scribe {
         serde_yaml::from_str(data).map_err(Into::into)
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_pop_descend() {
-        const YAML_STR : &str = r#"
-        ---
-        - name: root
-          groups:
-          - rules:
-            - A <B> <C>
-        - name: B
-          groups:
-          - rules
-            - B <!C>
-        - name: C
-          groups:
-          - rules
-            - C
-            - D
-        "#;
-        let mut scr = Scribe::new();
-        scr.load_cognates_str(YAML_STR).unwrap();
-        let r = scribe.gen("root").unwrap();
-        assert_eq!(r, "A B C D");
-    }
-}
