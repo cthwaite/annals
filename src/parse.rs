@@ -32,7 +32,7 @@ fn make_literal(expr: &str, beg: usize, end: usize) -> Token {
 ///
 fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
     if expr.len() == 2 {
-        return Err(ParseError::ZeroLengthSubst(beg + 1));
+        return Err(ParseError::ZeroLengthSubst(beg + 1, end));
     }
     let expr = &expr[1..expr.len() - 1];
     let (cmd_str, tok_str) = match expr.find(" ") {
@@ -106,7 +106,7 @@ fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Toke
 /// Make a Token::NonTerminal from a string slice.
 fn make_subst(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
     if beg == end {
-        return Err(ParseError::ZeroLengthSubst(beg));
+        return Err(ParseError::ZeroLengthSubst(beg, end));
     }
     match expr.get(beg..end) {
         Some(snip) => validate_substitution_expr(snip, beg, end),
@@ -294,17 +294,17 @@ mod test {
 
     #[test]
     fn test_err_empty_token() {
-        should_fail_with!("<>", ParseError::ZeroLengthSubst(1));
+        should_fail_with!("<>", ParseError::ZeroLengthSubst(1, 2));
         should_fail_with!("<@>", ParseError::InvalidName(1, 2));
         should_fail_with!("<!>", ParseError::InvalidName(1, 2));
-        should_fail_with!("<()>", ParseError::ZeroLengthSubst(2));
+        should_fail_with!("<()>", ParseError::ZeroLengthSubst(2, 3));
     }
 
     #[test]
     fn test_err_zero_length() {
-        should_fail_with!("Zero-length <>", ParseError::ZeroLengthSubst(13));
+        should_fail_with!("Zero-length <>", ParseError::ZeroLengthSubst(13, 14));
         should_fail_with!("Zero-length <> unaffected by post-string",
-                          ParseError::ZeroLengthSubst(13));
+                          ParseError::ZeroLengthSubst(13, 14));
     }
 
     #[test]
