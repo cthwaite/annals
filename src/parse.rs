@@ -29,7 +29,7 @@ fn make_literal(expr: &str, beg: usize, end: usize) -> Token {
 }
 
 
-///
+/// Parse a Token::Expression from a string slice.
 fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
     if expr.len() == 2 {
         return Err(ParseError::ZeroLengthSubst(beg + 1, end));
