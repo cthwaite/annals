@@ -39,7 +39,6 @@ fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseErro
         Some(first_space) => expr.split_at(first_space),
         None => return Err(ParseError::InvalidExpression(beg, end))
     };
-    println!("expr: ('{}' '{}')", cmd_str, tok_str);
     let cmd = match cmd_str {
         "cap" | "capitalize" => Command::Capitalize,
         "low" | "lowercase" => Command::Lowercase,
