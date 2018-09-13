@@ -37,7 +37,7 @@ impl Cognate {
 
     /// Create a new group from the passed slice of Templates.
     pub fn group_from_templates<T: AsRef<str>>(&mut self, templates: &[T]) -> Result<(), Error> {
-        let grp = Group::from_templates(templates)?;
+        let grp = Group::from_rules(templates)?;
         self.groups.push(grp);
         Ok(())
     }
