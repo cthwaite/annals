@@ -78,7 +78,7 @@ fn parse_variable(expr: &str, _beg: usize, _end: usize) -> Result<Token, ParseEr
 /// Validate and create a Token from an expression string.
 fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
     lazy_static! {
-        static ref VALIDATE_NAME: Regex = Regex::new(r##"^[@!$#]?[A-Za-z0-9_-]{2,}$"##).unwrap();
+        static ref VALIDATE_NAME: Regex = Regex::new(r##"^[@!$#]?[\w0-9_-]+$"##).unwrap();
     }
     let initial = &expr[0..1];
     match initial {
@@ -90,7 +90,6 @@ fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Toke
         },
         _ => {
             if !VALIDATE_NAME.is_match(expr) {
-                println!("expr: {}", expr);
                 return Err(ParseError::InvalidName(beg, end));
             }
             match initial {
