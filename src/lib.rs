@@ -244,7 +244,6 @@ impl Scribe {
                 context.unbind(name);
                 ret
             },
-            _ => Err(AnnalsFailure::UnknownToken{ content: "Unknown token".into() }.into())
         }
     }
 }
