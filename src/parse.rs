@@ -115,6 +115,8 @@ fn make_subst(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
 
 /// Transform a string into a Vector of Tokens.
 pub fn make_expr(expr: &str) -> Result<Vec<Token>, ParseError> {
+    if expr.is_empty() {
+        return Err(ParseError::EmptyRule);
     let mut exprs : Vec<Token> = vec![];
 
     let mut in_subst = false;

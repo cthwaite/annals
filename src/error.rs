@@ -5,6 +5,7 @@ use serde::de;
 
 #[derive(Debug, Clone)]
 pub enum ParseError {
+    EmptyRule,
     InternalError,
     InvalidExpression(usize, usize),
     InvalidName(usize, usize),
@@ -18,6 +19,7 @@ pub enum ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            ParseError::EmptyRule => write!(f, "Cannot create rule from empty string!"),
             ParseError::InvalidExpression(beg, end) => {
                 write!(f, "Invalid expression ({}, {})", beg, end)
             },
@@ -110,6 +112,7 @@ impl Display for AnnalsFailure {
 fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &String) -> fmt::Result {
     write!(f, "\n")?;
     match err {
+        ParseError::EmptyRule => write!(f, "{}", err),
         ParseError::InternalError => {
             write!(f, "Unknown internal error while parsing:\n    {}", expr)
         },
