@@ -5,17 +5,17 @@ use annals::{Context, Scribe};
 fn main() {
     let mut scribe = Scribe::new();
     scribe.load_cognates("texts/improv.yml").unwrap();
-    let mut bob = Context::new();
-    bob.bind("name", String::from("Bob"));
+    let mut bob = Context::default();
+    bob.bind("name", "Bob");
     println!("{}", scribe.gen_with("root", bob).unwrap());
 
-    let mut alice = Context::new();
-    alice.bind("name", String::from("Alice"));
+    let mut alice = Context::default();
+    alice.bind("name", "Alice");
     alice.set("class", "mammal");
     println!("{}", scribe.gen_with("root", alice).unwrap());
 
-    let mut carol = Context::new();
-    carol.bind("name", String::from("Carol"));
+    let mut carol = Context::default();
+    carol.bind("name", "Carol");
     carol.set("class", "bird");
     println!("{}", scribe.gen_with("root", carol).unwrap());
 }
