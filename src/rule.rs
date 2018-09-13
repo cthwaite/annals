@@ -1,8 +1,8 @@
 use std::fmt;
 use std::slice::Iter;
 
-use parse::{make_expr, Token};
-use error::ParseError;
+use parse::{parse, Token};
+use error::AnnalsFailure;
 
 
 #[derive(Debug, PartialEq)]
@@ -15,9 +15,9 @@ pub struct Rule {
 
 impl Rule {
     /// Create a rule from a &str.
-    pub fn new(expr: &str) -> Result<Self, ParseError> {
+    pub fn new(expr: &str) -> Result<Self, AnnalsFailure> {
         let literal = expr.into();
-        let tokens = make_expr(expr)?;
+        let tokens = parse(expr)?;
         Ok(Rule {
             literal,
             tokens,
@@ -25,8 +25,8 @@ impl Rule {
     }
 
     /// Create a Rule by consuming a String.
-    pub fn from_string(literal: String) -> Result<Self, ParseError> {
-        let tokens = make_expr(&literal)?;
+    pub fn from_string(literal: String) -> Result<Self, AnnalsFailure> {
+        let tokens = parse(&literal)?;
         Ok(Rule {
             literal,
             tokens,
@@ -80,10 +80,7 @@ pub mod rule_list {
             let literals : Vec<String> = Vec::<String>::deserialize(deserializer)?;
             match literals.into_iter().map(Rule::from_string).collect() {
                 Ok(rules) =>  Ok(rules),
-                Err(e) => {
-                    println!("{}", e);
-                    Err(D::Error::custom(e))
-                }
+                Err(e) => Err(e).map_err(Error::custom),
             }
     }
 }
