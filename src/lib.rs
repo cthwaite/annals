@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-#[macro_use] extern crate failure;
+extern crate failure;
 extern crate rand;
 extern crate regex;
 #[macro_use] extern crate lazy_static;
