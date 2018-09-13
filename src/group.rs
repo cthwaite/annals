@@ -28,7 +28,7 @@ impl Group {
         }
     }
 
-    pub fn from_templates<T: AsRef<str>>(rules: &[T]) -> Result<Self, Error> {
+    pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, Error> {
         let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
         let rules = rules.unwrap(); //rules?;
         Ok(Group {
@@ -39,13 +39,13 @@ impl Group {
         })
     }
 
-    pub fn add_template(&mut self, expr: &str) -> Result<(), Error> {
+    pub fn add_rule(&mut self, expr: &str) -> Result<(), Error> {
         let tmp_rule = Rule::new(expr).unwrap();
         self.rules.push(tmp_rule);
         Ok(())
     }
 
-    pub fn add_templates<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), Error> {
+    pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), Error> {
         let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
         let rules = rules.unwrap();
         self.rules.extend(rules.into_iter());
