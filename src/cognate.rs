@@ -5,6 +5,7 @@ use std::fs::File;
 use serde_yaml;
 
 
+/// Named collection of Groups of Rules.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cognate {
     pub name: String,
@@ -13,6 +14,15 @@ pub struct Cognate {
 
 
 impl Cognate {
+    /// Create a new Cognate with the given name.
+    ///
+    /// # Arguments
+    /// * `name` - A string representing the name for this Cognate.
+    ///
+    /// ```
+    /// // Create a new Cognate named 'root'
+    /// let cog = Cognate::new("root");
+    /// ```
     pub fn new<S> (name: S) -> Self where S: Into<String> {
         Cognate {
             name: name.into(),
@@ -25,6 +35,7 @@ impl Cognate {
         self.groups.is_empty()
     }
 
+    /// Iterate over Groups in this Cognate.
     pub fn iter_groups(&self) -> Iter<Group> {
         self.groups.iter()
     }
