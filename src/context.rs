@@ -3,7 +3,7 @@ use group::Group;
 use std::collections::VecDeque;
 
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Context {
     pub tags: HashMap<String, String>,
     bindings: HashMap<String, String>,
