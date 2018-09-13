@@ -11,7 +11,7 @@ pub enum ParseError {
     InvalidRange(usize, usize),
     UnbalancedBrackets,
     UnknownCommand(usize, usize),
-    ZeroLengthSubst(usize),
+    ZeroLengthSubst(usize, usize),
 }
 
 
@@ -29,8 +29,8 @@ impl fmt::Display for ParseError {
                 write!(f, "Unknown command at ({}, {})", beg, end)
             },
             ParseError::InvalidRange(beg, end) => write!(f, "Invalid range specification at ({}, {})", beg, end),
-            ParseError::ZeroLengthSubst(index) => {
-                write!(f, "Zero-length substitution expression at {}", index)
+            ParseError::ZeroLengthSubst(beg, end) => {
+                write!(f, "Zero-length substitution expression ({}, {})", beg, end)
             },
             // yes, unreachable... FOR NOW
             _ => write!(f, "Unknown error!")
