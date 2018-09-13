@@ -1,4 +1,4 @@
-use error::{ParseError, InvalidRule};
+use error::{ParseError, AnnalsFailure};
 
 use regex::Regex;
 
@@ -160,10 +160,10 @@ pub fn make_expr(expr: &str) -> Result<Vec<Token>, ParseError> {
     Ok(exprs)
 }
 
-pub fn parse(expr: &str) -> Result<Vec<Token>, InvalidRule> {
+pub fn parse(expr: &str) -> Result<Vec<Token>, AnnalsFailure> {
     match make_expr(expr) {
         Ok(tokens) => Ok(tokens),
-        Err(error) => Err(InvalidRule::from_parse_error(expr, error))
+        Err(error) => Err(AnnalsFailure::from_invalid_rule(expr.to_string(), error))
     }
 }
 
