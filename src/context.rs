@@ -83,13 +83,25 @@ impl Context {
         self.bindings.get(key).cloned()
     }
 
+    /// Check if the Context currently holds any tags.
+    pub fn has_tags(&self) -> bool {
+        !self.tags.is_empty()
+    }
+
+    /// Check if a group's tags match the tags in this Context exactly.
+    pub fn accept_strict(&self, group: &Group) -> bool {
+        !self.tags.iter()
+                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
+                  .any(|(ref key, val)| group.tags[*key] != **val)
+    }
+
     /// Check if a group's tags match the tags in this Context.
     pub fn accept(&self, group: &Group) -> bool {
         if self.tags.is_empty() || group.tags.is_empty() {
             return true;
         }
         !self.tags.iter()
-                 .filter(|(ref key, _val)| group.tags.contains_key(*key))
-                 .any(|(ref key, val)| group.tags[*key] != **val)
+                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
+                  .any(|(ref key, val)| group.tags[*key] != **val)
     }
 }
