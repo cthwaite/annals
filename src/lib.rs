@@ -127,7 +127,7 @@ impl Scribe {
         match self.cognates.get(name) {
             Some(cognate) => {
                 if cognate.is_empty() {
-                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
+                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()});
                 }
                 let groups = cognate.iter_groups()
                                     .filter(|grp| context.accept(grp))
@@ -138,7 +138,7 @@ impl Scribe {
                 }
                 let mut templates = GroupListIter::new(groups);
                 if templates.size == 0 {
-                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
+                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()});
                 }
                 let index = thread_rng().gen_range(0, templates.size);
                 match templates.nth(index) {
@@ -147,11 +147,11 @@ impl Scribe {
                         Ok(template.0)
                     },
                     None => {
-                        Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into())
+                        Err(AnnalsFailure::EmptyCognate{name: name.to_string()})
                     }
                 }
             },
-            None => Err(AnnalsFailure::UnknownCognate{name: name.to_string()}.into())
+            None => Err(AnnalsFailure::UnknownCognate{name: name.to_string()})
         }
     }
 
