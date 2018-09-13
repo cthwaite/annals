@@ -2,13 +2,13 @@
 - name: animal
   groups:
     - tags: { "class": "mammal" }
-      templates:
+      rules:
         - dog
         - cat
     - tags: { "class": "bird" }
-      templates:
+      rules:
         - parrot
 - name: root
   groups:
-    - templates:
+    - rules:
         - "<name>: I have a <animal> who is <#2-7> years old."

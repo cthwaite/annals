@@ -1,10 +1,11 @@
-use failure::Error;
 use std::collections::HashMap;
-use template::{Template, template_list};
+use rule::{Rule, rule_list};
+use error::AnnalsFailure;
 
 fn always_false() -> bool {
     false
 }
+
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Group {
@@ -14,61 +15,92 @@ pub struct Group {
     bind: bool,
     #[serde(default)]
     pub tags: HashMap<String, String>,
-    #[serde(with="template_list")]
-    pub templates: Vec<Template>
+    #[serde(with="rule_list")]
+    pub rules: Vec<Rule>
 }
 
+
 impl Group {
+    /// Create a new empty group of rules.
     pub fn new() -> Self {
         Group {
             note: String::new(),
             bind: false,
             tags: HashMap::new(),
-            templates: vec![]
+            rules: vec![]
         }
     }
 
-    pub fn from_templates<T: AsRef<str>>(templates: &[T]) -> Result<Self, Error> {
-        let templates : Result<Vec<_>, _> = templates.iter().map(|lit| Template::new(lit.as_ref())).collect();
-        let templates = templates?;
+    /// Get the number of rules in the Group.
+    pub fn len(&self) -> usize {
+        self.rules.len()
+    }
+
+    /// Create a new `Group` from a slice of strings.
+    ///
+    /// # Arguments
+    /// * `rules` - Slice of `String` or `&str` which will be parsed as `Rule`s.
+    ///
+    pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, AnnalsFailure> {
+        let rules : Result<Vec<_>, _> = rules.iter()
+                                             .map(|lit| Rule::new(lit.as_ref()))
+                                             .collect();
+        let rules = rules?;
         Ok(Group {
             note: String::new(),
             bind: false,
             tags: HashMap::new(),
-            templates
+            rules
         })
     }
 
-    pub fn add_template(&mut self, template: &str) -> Result<(), Error> {
-        let tmp = Template::new(template)?;
-        self.templates.push(tmp);
+    /// Add a rule to this group.
+    /// # Arguments
+    /// * `expr`: String slice to be parsed as a `Rule`.
+    ///
+    pub fn add_rule(&mut self, expr: &str) -> Result<(), AnnalsFailure> {
+        let tmp_rule = Rule::new(expr)?;
+        self.rules.push(tmp_rule);
         Ok(())
     }
 
-    pub fn add_templates<T: AsRef<str>>(&mut self, templates: &[T]) -> Result<(), Error> {
-        let templates : Result<Vec<_>, _> = templates.iter().map(|lit| Template::new(lit.as_ref())).collect();
-        let templates = templates?;
-        self.templates.extend(templates.into_iter());
+    /// Add a list of rules to this Group.
+    ///
+    /// # Arguments
+    /// * `rules` - Slice of `String` or `&str` which will be parsed as rules.
+    ///
+    pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), AnnalsFailure> {
+        let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
+        let rules = rules?;
+        self.rules.extend(rules.into_iter());
         Ok(())
     }
 
+    /// Set a tag for this group.
+    ///
+    /// # Arguments
+    /// * `key` - Tag key.
+    /// * `val` - Tag value.
+    ///
     pub fn set_tag(&mut self, key: &str, val: &str) {
         self.tags.insert(key.to_string(), val.to_string());
     }
 }
 
 
+/// Iteration over each Rule in a Group.
 pub struct GroupListIter<'a> {
     groups: Vec<&'a Group>,
-    t_iter: ::std::slice::Iter<'a, Template>,
+    t_iter: ::std::slice::Iter<'a, Rule>,
     index: usize,
     pub size: usize
 }
 
+
 impl<'a> GroupListIter<'a> {
     pub fn new(groups: Vec<&'a Group>) -> Self {
-        let t_iter = groups.last().unwrap().templates.iter();
-        let size = groups.iter().map(|grp| grp.templates.len()).sum();
+        let t_iter = groups.last().unwrap().rules.iter();
+        let size = groups.iter().map(|grp| grp.rules.len()).sum();
         GroupListIter {
             groups,
             t_iter,
@@ -81,7 +113,7 @@ impl<'a> GroupListIter<'a> {
         self.groups.pop();
         match self.groups.last() {
             Some(group) => {
-                self.t_iter = group.templates.iter();
+                self.t_iter = group.rules.iter();
                 true
             },
             None => false
@@ -91,7 +123,7 @@ impl<'a> GroupListIter<'a> {
 
 
 impl<'a> Iterator for GroupListIter<'a> {
-    type Item = (&'a Template, &'a Group);
+    type Item = (&'a Rule, &'a Group);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {

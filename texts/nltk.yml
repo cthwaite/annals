@@ -1,0 +1,40 @@
+- name: S
+  groups:
+  - rules:
+    - <NP> <VP>
+
+- name: NP
+  groups:
+  - rules:
+    - <Det> <N>
+
+- name: PP
+  groups:
+  - rules:
+    - <P> <NP>
+
+- name: Det
+  groups:
+  - rules:
+    - the
+    - a
+
+- name: VP
+  groups:
+  - rules:
+    - slept
+    - saw <NP>
+    - walked <PP>
+
+- name: N
+  groups:
+  - rules:
+    - man
+    - park
+    - dog
+
+- name: P
+  groups:
+  - rules:
+    - in
+    - with

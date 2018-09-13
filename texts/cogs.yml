@@ -1,16 +1,24 @@
 - name: planet
   groups:
-    - templates: ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "neptune", "uranus", "pluto"]
+    - tags: { "colour": "blue" }
+      rules:
+      - earth
+      - neptune
+      - uranus
+    - tags: { "colour": "red" }
+      rules:
+      - mars
+      - jupiter
 - name: continent
   groups:
-    - templates: ["asia", "africa", "north america", "south america", "antarctica", "europe", "australia"]
+    - rules: ["asia", "africa", "north america", "south america", "antarctica", "europe", "australia"]
 - name: greeting
   groups:
-    - templates: [
-        "here's to you, <planet>, from the people of <continent>! <continent> salutes you!",
+    - rules: [
+        "here's to you, <planet>, from the people of <!continent>! <continent> salutes you!",
         "hello, <planet>!",
       ]
 - name: root
   groups:
-    - templates:
-        - "<[continent:continent][planet:planet]greeting>"
+    - rules:
+        - "<greeting>"

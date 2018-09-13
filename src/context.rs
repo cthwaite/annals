@@ -1,17 +1,54 @@
 use std::collections::HashMap;
 use group::Group;
+use std::collections::VecDeque;
+
 
 #[derive(Debug, Default)]
 pub struct Context {
     pub tags: HashMap<String, String>,
-    bindings: HashMap<String, String>
+    bindings: HashMap<String, String>,
+    unpop: VecDeque<Vec<String>>
 }
 
 impl Context {
-    pub fn new() -> Self {
+    pub fn new(tags: HashMap<String, String>, bindings: HashMap<String, String>) -> Self {
+        Context {
+            tags,
+            bindings,
+            unpop: VecDeque::default(),
+        }
+    }
+
+    /// Create a new Context with the given tags.
+    pub fn with_tags(tags: HashMap<String, String>) -> Self {
+        Context {
+            tags,
+            bindings: HashMap::default(),
+            unpop: VecDeque::default(),
+        }
+    }
+
+    /// Create a new Context with the given bindings.
+    pub fn with_bindings(bindings: HashMap<String, String>) -> Self {
         Context {
             tags: HashMap::default(),
-            bindings: HashMap::default()
+            bindings,
+            unpop: VecDeque::default(),
+        }
+    }
+
+    pub fn descend(&mut self) {
+        self.unpop.push_back(vec![]);
+    }
+
+    pub fn ascend(&mut self) {
+        match self.unpop.pop_back() {
+            Some(vec) => {
+                for name in vec {
+                    self.unbind(name);
+                }
+            },
+            None => ()
         }
     }
 
@@ -28,19 +65,34 @@ impl Context {
     }
 
     /// Add a binding.
-    pub fn bind(&mut self, key: &str, value: String) {
-        self.bindings.insert(key.to_string(), value);
+    pub fn bind<T: AsRef<str>>(&mut self, key: T, value: T) {
+        self.bindings.insert(key.as_ref().to_string(), value.as_ref().to_string());
+        match self.unpop.back_mut() {
+            Some(vec) => vec.push(key.as_ref().to_string()),
+            None => ()
+        }
     }
 
+    /// Remove a binding.
     pub fn unbind<T: AsRef<str>>(&mut self, key: T) {
         self.bindings.remove(key.as_ref());
     }
 
+    /// Get the value for a binding, if any.
     pub fn get_binding(&mut self, key: &str) -> Option<String> {
-        if self.bindings.contains_key(key) {
-            return Some(self.bindings[key].clone());
-        }
-        None
+        self.bindings.get(key).cloned()
+    }
+
+    /// Check if the Context currently holds any tags.
+    pub fn has_tags(&self) -> bool {
+        !self.tags.is_empty()
+    }
+
+    /// Check if a group's tags match the tags in this Context exactly.
+    pub fn accept_strict(&self, group: &Group) -> bool {
+        !self.tags.iter()
+                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
+                  .any(|(ref key, val)| group.tags[*key] != **val)
     }
 
     /// Check if a group's tags match the tags in this Context.
@@ -49,8 +101,7 @@ impl Context {
             return true;
         }
         !self.tags.iter()
-                 .filter(|(ref key, _val)| group.tags.contains_key(*key))
-                 .any(|(ref key, val)| group.tags[*key] != **val)
-
+                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
+                  .any(|(ref key, val)| group.tags[*key] != **val)
     }
 }

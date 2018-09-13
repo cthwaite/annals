@@ -1,68 +1,35 @@
 #![allow(dead_code)]
 
-#[macro_use] extern crate failure;
-#[cfg(test)] #[macro_use] extern crate pest;
-#[cfg(not(test))] extern crate pest;
-#[macro_use] extern crate pest_derive;
+extern crate failure;
 extern crate rand;
+extern crate regex;
+#[macro_use] extern crate lazy_static;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_yaml;
 
 use failure::Error;
 use rand::prelude::*;
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::str::FromStr;
 
 
-mod error;
+mod parse;
+pub mod cognate;
 pub mod context;
-mod group;
-mod parser;
-mod template;
+pub mod error;
+pub mod group;
+pub mod rule;
 
-use error::AnnalsFailure;
 pub use context::Context;
-use group::{Group, GroupListIter};
-use template::{Token, Template};
 
+use cognate::Cognate;
+use error::AnnalsFailure;
+use group::GroupListIter;
+use parse::{Command, Token};
+use rule::Rule;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Cognate {
-    pub name: String,
-    groups: Vec<Group>
-}
-
-
-impl Cognate {
-    pub fn new<S> (name: S) -> Self where S: Into<String> {
-        Cognate {
-            name: name.into(),
-            groups: vec![]
-        }
-    }
-
-    /// Create a new Cognate from a YAML file.
-    pub fn from_yaml(path: &str) -> Result<Self, Error> {
-        let f = File::open(path)?;
-        serde_yaml::from_reader(f).map_err(Into::into)
-    }
-
-    /// Create a new group from the passed slice of Templates.
-    pub fn group_from_templates<T: AsRef<str>>(&mut self, templates: &[T]) -> Result<(), Error> {
-        let grp = Group::from_templates(templates)?;
-        self.groups.push(grp);
-        Ok(())
-    }
-
-    /// Add a new Group to this Cognate.
-    pub fn add_group(&mut self) -> Option<&mut Group> {
-        self.groups.push(Group::new());
-        self.groups.last_mut()
-    }
-}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Scribe {
@@ -72,7 +39,7 @@ pub struct Scribe {
 impl Scribe {
     pub fn new() -> Self {
         Scribe {
-            cognates: HashMap::new(),
+            cognates: HashMap::default(),
         }
     }
 
@@ -119,28 +86,28 @@ impl Scribe {
 
     /// Generate text from a named Cognate.
     pub fn gen(&self, cognate: &str) -> Result<String, AnnalsFailure> {
-        let mut context = Context::new();
-        let template = self.select_template(cognate, &mut context)?;
-        self.expand_tokens(&template.tokens, &mut context)
+        let mut context = Context::default();
+        let sel = self.select_rule(cognate, &mut context)?;
+        self.expand_tokens(sel.tokens(), &mut context)
     }
 
     /// Generate text from a named Cognate using the passed Context.
     pub fn gen_with(&self, cognate: &str, mut context: Context) -> Result<String, AnnalsFailure> {
-        let template = self.select_template(cognate, &mut context)?;
-        self.expand_tokens(&template.tokens, &mut context)
+        let sel = self.select_rule(cognate, &mut context)?;
+        self.expand_tokens(sel.tokens(), &mut context)
     }
 
     /// Generate text from the passed template string.
-    pub fn expand(&self, template: &str) -> Result<String, AnnalsFailure> {
-        let template = Template::from_string(template.to_owned())?;
-        let mut context = Context::new();
-        self.expand_tokens(&template.tokens, &mut context)
+    pub fn expand(&self, rule: &str) -> Result<String, AnnalsFailure> {
+        let new_rule = Rule::new(rule)?;
+        let mut context = Context::default();
+        self.expand_tokens(new_rule.tokens(), &mut context)
     }
 
     /// Generate text from the passed template string and Context.
-    pub fn expand_with(&self, template: &str, mut context: Context) -> Result<String, AnnalsFailure> {
-        let template = Template::from_string(template.to_owned())?;
-        self.expand_tokens(&template.tokens, &mut context)
+    pub fn expand_with(&self, rule: &str, mut context: Context) -> Result<String, AnnalsFailure> {
+        let new_rule = Rule::new(rule)?;
+        self.expand_tokens(new_rule.tokens(), &mut context)
     }
     /// Save this Scribe to a YAML file.
     pub fn save(&self, path: &str) -> Result<(), Error> {
@@ -156,22 +123,24 @@ impl Scribe {
     }
 
     /// Select a template from a named Cognate using the passed Context.
-    fn select_template(&self, name: &str, context: &mut Context) -> Result<&Template, AnnalsFailure> {
+    fn select_rule(&self, name: &str, context: &mut Context) -> Result<&Rule, AnnalsFailure> {
         match self.cognates.get(name) {
             Some(cognate) => {
-                if cognate.groups.is_empty() {
-                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
+                if cognate.is_empty() {
+                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()});
                 }
-                let groups = cognate.groups.iter()
-                                           .filter(|grp| context.accept(grp))
-                                           .collect::<Vec<_>>();
+                let groups = cognate.iter_groups()
+                                    .filter(|grp| context.accept_strict(grp))
+                                    .collect::<Vec<_>>();
                 if groups.is_empty() {
-                    let context = format!("{:?}", context.tags);
-                    return Err(AnnalsFailure::NoSuitableGroups{name: name.to_string(), context}.into());
+                    return Err(AnnalsFailure::NoSuitableGroups{
+                        name: name.to_string(),
+                        context: format!("{:?}", context.tags)
+                    });
                 }
                 let mut templates = GroupListIter::new(groups);
                 if templates.size == 0 {
-                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into());
+                    return Err(AnnalsFailure::EmptyCognate{name: name.to_string()});
                 }
                 let index = thread_rng().gen_range(0, templates.size);
                 match templates.nth(index) {
@@ -180,42 +149,12 @@ impl Scribe {
                         Ok(template.0)
                     },
                     None => {
-                        Err(AnnalsFailure::EmptyCognate{name: name.to_string()}.into())
+                        Err(AnnalsFailure::EmptyCognate{name: name.to_string()})
                     }
                 }
             },
-            None => Err(AnnalsFailure::UnknownCognate{name: name.to_string()}.into())
+            None => Err(AnnalsFailure::UnknownCognate{name: name.to_string()})
         }
-    }
-
-    pub fn unspool(&self) -> Result<String, AnnalsFailure> {
-        let mut ctx = Context::new();
-        let template = self.select_template("root", &mut ctx)?;
-        self.unspool_impl(&template, &mut ctx).and_then(|cows| Ok(cows.join("")))
-    }
-
-    fn unspool_impl<'a>(&self, template: &'a Template, ctx: &mut Context) -> Result<Vec<Cow<'a, str>>, AnnalsFailure> {
-        let mut stack : Vec<&'a Token> = template.tokens.iter().rev().collect();
-        let mut out : Vec<Cow<'a, str>> = vec![];
-        while let Some(token) = stack.pop() {
-            match token {
-                Token::Literal(text) => out.push(text[..].into()),
-                Token::PropertyWithBindings{binds, name} => {
-                    for (key, val) in binds.iter() {
-                        if ctx.get_binding(key).is_some() {
-                            continue;
-                        }
-                        let template = self.select_template(val, ctx)?;
-                        let bind = self.unspool_impl(&template, ctx)?;
-                        ctx.bind(key, bind.join(""));
-                    }
-                    let _template = self.select_template(name, ctx)?;
-                    binds.iter().for_each(|(key, _)| ctx.unbind(key));
-                },
-                _ => ()
-            }
-        }
-        Ok(out)
     }
 
     /// Expand an iterator over a sequence of Tokens into a String.
@@ -229,46 +168,84 @@ impl Scribe {
     }
 
     fn expand_name(&self, name: &str, context: &mut Context) -> Result<String, AnnalsFailure> {
+        context.descend();
         if let Some(bind) = context.get_binding(name) {
             return Ok(bind);
         }
-        let template = self.select_template(name, context)?;
-        self.expand_tokens(&template.tokens, context)
+        let sel = self.select_rule(name, context)?;
+        let ret = self.expand_tokens(sel.tokens(), context);
+        context.ascend();
+        ret
     }
 
     /// Recursively expand a token to a String.
     fn handle_token(&self, token: &Token, context: &mut Context) -> Result<String, AnnalsFailure> {
         match token {
             Token::Literal(text) => Ok(text.clone()),
-            Token::PropertyWithBindings{binds, name} => {
-                for (key, val) in binds.iter() {
-                    if context.get_binding(key).is_some() {
-                        continue;
-                    }
-                    let template = self.select_template(val, context)?;
-                    let bind = self.expand_tokens(&template.tokens, context)?;
-                    context.bind(key, bind);
-                }
-                let ret = self.expand_name(name, context);
-                // TODO: exiting the 'scope' of a property, we drop the
-                // property's bindings, but bindings, but it may be _optionally_
-                // desirable to do so for tags as well.
-                binds.iter().for_each(|(key, _)| context.unbind(key));
-                ret
+            Token::NonTerminal(name) => self.expand_name(name, context),
+            Token::StickyNonTerminal(name) => {
+                self.expand_name(name, context)
+                    .and_then(|ret| {
+                        context.bind(name, &ret);
+                        Ok(ret)
+                    })
             },
-            Token::Property(name) => self.expand_name(name, context),
-            Token::Ident(name) => self.expand_name(name, context),
-            Token::Variable(name) => {
+            Token::Binding(name) => {
                 if let Some(bind) = context.get_binding(name) {
                     return Ok(bind);
                 }
                 Err(AnnalsFailure::UnboundVariable{ name: name.clone() }.into())
             },
-            Token::Range{lower, upper} => {
+            Token::Expression(cmd, token) => {
+                match cmd {
+                    Command::Capitalize => {
+                        self.handle_token(token, context)
+                            .and_then(|ret| {
+                                let mut chs = ret.chars();
+                                match chs.next() {
+                                    Some(t) => Ok(t.to_uppercase().chain(chs).collect()),
+                                    None => Ok("".to_string())
+                                }
+                            })
+                    },
+                    Command::Lowercase => self.handle_token(token, context)
+                                              .and_then(|ret| Ok(ret.to_lowercase())),
+                    Command::Titlecase => self.handle_token(token, context),
+                    Command::IndefiniteArticle => {
+                        self.handle_token(token, context)
+                            .and_then(|ret| {
+                                match &ret.chars().next() {
+                                    // TODO: Stopgap; replace.
+                                    Some(ch) => {
+                                        match ch {
+                                            'a' | 'e' | 'i' | 'o' | 'u' |
+                                            'A' | 'E' | 'I' | 'O' | 'U' => Ok(format!("an {}", ret)),
+                                            _ => Ok(format!("a {}", ret)),
+                                        }
+                                    },
+                                    None => Ok("".to_string()),
+                                }
+                            })
+                    },
+                }
+            },
+            Token::Range(lower, upper) => {
                 Ok(thread_rng().gen_range(*lower, *upper).to_string())
             },
-            Token::Binding(_) => unreachable!(),
-            Token::Unknown(content) => Err(AnnalsFailure::UnknownToken{ content: content.to_string() }.into())
+            Token::VariableAssignment(name, bind) => {
+                if context.get_binding(name).is_some() {
+                    return Ok("".to_string())
+                }
+                let srule = self.select_rule(bind, context)?;
+                let bind = self.expand_tokens(srule.tokens(), context)?;
+                context.bind(name, &bind);
+                let ret = self.expand_name(name, context);
+                // TODO: exiting the 'scope' of a property, we drop the
+                // property's bindings, but bindings, but it may be _optionally_
+                // desirable to do so for tags as well.
+                context.unbind(name);
+                ret
+            },
         }
     }
 }
@@ -276,6 +253,7 @@ impl Scribe {
 
 impl FromStr for Scribe {
     type Err = Error;
+
     /// Create a new Scribe from a YAML string.
     fn from_str(data: &str) -> Result<Self, Error> {
         serde_yaml::from_str(data).map_err(Into::into)
