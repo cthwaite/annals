@@ -1,6 +1,6 @@
-use failure::Error;
 use std::collections::HashMap;
 use rule::{Rule, rule_list};
+use error::AnnalsFailure;
 
 fn always_false() -> bool {
     false
@@ -32,10 +32,10 @@ impl Group {
     }
 
     /// Create a new group of rules from 
-    pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, Error> {
         let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
         // TODO: this should be ?
         let rules = rules.unwrap();
+    pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, AnnalsFailure> {
         Ok(Group {
             note: String::new(),
             bind: false,
@@ -45,15 +45,15 @@ impl Group {
     }
 
     /// Add a rule to this group.
-    pub fn add_rule(&mut self, expr: &str) -> Result<(), Error> {
         // TODO: this should be ?
         let tmp_rule = Rule::new(expr).unwrap();
+    pub fn add_rule(&mut self, expr: &str) -> Result<(), AnnalsFailure> {
         self.rules.push(tmp_rule);
         Ok(())
     }
 
     /// Add a list of rules to this Group.
-    pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), Error> {
+    pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), AnnalsFailure> {
         let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
         // TODO: this should be ?
         let rules = rules.unwrap();
