@@ -109,8 +109,8 @@ impl Display for AnnalsFailure {
 /// <)>
 ///  ^--Invalid name at (1, 2) at line 5 column 10
 /// ```
-fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &String) -> fmt::Result {
-    write!(f, "\n")?;
+fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &str) -> fmt::Result {
+    writeln!(f)?;
     match err {
         ParseError::EmptyRule => write!(f, "{}", err),
         ParseError::InternalError => {
@@ -121,7 +121,7 @@ fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &String) 
         | ParseError::InvalidRange(beg, _end)
         | ParseError::UnknownCommand(beg, _end)
         | ParseError::ZeroLengthSubst(beg, _end) => {
-            write!(f, "{}\n", expr)?;
+            writeln!(f, "{}", expr)?;
             write!(f, "{}^-- {}", " ".repeat(*beg), err)
         },
         ParseError::UnbalancedBrackets => {
