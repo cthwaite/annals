@@ -38,6 +38,11 @@ impl Rule {
         self.tokens.len()
     }
 
+    /// Check if the Rule has no tokens.
+    pub fn is_empty(&self) -> bool {
+        self.tokens.is_empty()
+    }
+
     /// Iterate over the tokens in the Rule.
     pub fn iter(&self) -> Iter<Token> {
         self.tokens.iter()

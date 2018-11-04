@@ -36,6 +36,11 @@ impl Group {
         self.rules.len()
     }
 
+    /// Check if the Group is empty.
+    pub fn is_empty(&self) -> bool {
+        self.rules.is_empty()
+    }
+
     /// Create a new `Group` from a slice of strings.
     ///
     /// # Arguments
