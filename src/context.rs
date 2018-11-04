@@ -11,6 +11,7 @@ pub struct Context {
 }
 
 impl Context {
+    /// Create a new Context from a set of tags and bindings.
     pub fn new(tags: HashMap<String, String>, bindings: HashMap<String, String>) -> Self {
         Context {
             tags,
@@ -19,7 +20,7 @@ impl Context {
         }
     }
 
-    /// Create a new Context with the given tags.
+    /// Create a new Context with a set of tags.
     pub fn with_tags(tags: HashMap<String, String>) -> Self {
         Context {
             tags,
@@ -28,7 +29,7 @@ impl Context {
         }
     }
 
-    /// Create a new Context with the given bindings.
+    /// Create a new Context with a set of bindings.
     pub fn with_bindings(bindings: HashMap<String, String>) -> Self {
         Context {
             tags: HashMap::default(),
@@ -37,18 +38,17 @@ impl Context {
         }
     }
 
+    ///
     pub fn descend(&mut self) {
         self.unpop.push_back(vec![]);
     }
 
+    ///
     pub fn ascend(&mut self) {
-        match self.unpop.pop_back() {
-            Some(vec) => {
-                for name in vec {
-                    self.unbind(name);
-                }
-            },
-            None => ()
+        if let Some(vec) = self.unpop.pop_back() {
+            for name in vec {
+                self.unbind(name);
+            }
         }
     }
 
@@ -67,9 +67,8 @@ impl Context {
     /// Add a binding.
     pub fn bind<T: AsRef<str>>(&mut self, key: T, value: T) {
         self.bindings.insert(key.as_ref().to_string(), value.as_ref().to_string());
-        match self.unpop.back_mut() {
-            Some(vec) => vec.push(key.as_ref().to_string()),
-            None => ()
+        if let Some(vec) = self.unpop.back_mut() {
+            vec.push(key.as_ref().to_string());
         }
     }
 
