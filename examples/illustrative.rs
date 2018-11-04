@@ -30,7 +30,7 @@ const YAML_STR : &str = r#"
 "#;
 
 fn main() {
-    let mut scribe = Scribe::new();
+    let mut scribe = Scribe::default();
     scribe.load_cognates_str(YAML_STR).unwrap();
     let mut ctx = Context::default();
     ctx.bind("speaker", "Bob");

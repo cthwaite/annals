@@ -5,7 +5,7 @@ use annals::{Context, Scribe};
 
 
 fn main() {
-    let mut scribe = Scribe::new();
+    let mut scribe = Scribe::default();
     scribe.load_cognates("texts/cogs.yml").unwrap();
     for _i in 0..5 {
         println!("{}", scribe.gen("root").unwrap());

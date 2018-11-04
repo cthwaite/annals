@@ -3,7 +3,7 @@ extern crate annals;
 use annals::{Context, Scribe};
 
 fn main() {
-    let mut scribe = Scribe::new();
+    let mut scribe = Scribe::default();
     scribe.load_cognates("texts/improv.yml").unwrap();
     let mut bob = Context::default();
     bob.bind("name", "Bob");

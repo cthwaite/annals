@@ -39,12 +39,6 @@ pub struct Scribe {
 }
 
 impl Scribe {
-    pub fn new() -> Self {
-        Scribe {
-            cognates: HashMap::default(),
-        }
-    }
-
     /// Create a new Scribe from a YAML file.
     pub fn from(path: &str) -> Result<Self, Error> {
         let f = File::open(path)?;
@@ -266,9 +260,10 @@ impl FromStr for Scribe {
 #[cfg(test)]
 mod test {
     use super::*;
+
     #[test]
     fn test_handle_token() {
-        let scr = Scribe::new();
+        let scr = Scribe::default();
         let mut ctx = Context::default();
         let tok = Token::Expression(Command::Titlecase, Box::new(Token::Literal("the duke of york".to_owned())));
         assert_eq!(scr.handle_token(&tok, &mut ctx), Ok("The Duke of York".to_owned()));
