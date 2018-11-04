@@ -21,6 +21,8 @@ impl Cognate {
     /// * `name` - A string representing the name for this Cognate.
     ///
     /// ```
+    /// 
+    /// use annals::cognate::Cognate;
     /// // Create a new Cognate named 'root'
     /// let cog = Cognate::new("root");
     /// ```
@@ -56,7 +58,9 @@ impl Cognate {
     /// # Arguments
     /// * `path` - Path to YAML file.
     ///
-    /// ```
+    /// ```rust,no_run
+    /// use annals::cognate::Cognate;
+    /// 
     /// let cog = Cognate::from_yaml("~/Documents/grammar.yml").unwrap();
     /// ```
     pub fn from_yaml(path: &str) -> Result<Self, Error> {
@@ -72,11 +76,13 @@ impl Cognate {
     /// inserted into a new `Group`.
     ///
     /// ```
-    /// let mut cog = Cognate::new();
+    /// use annals::{cognate::Cognate, rule::Rule};
+    /// 
+    /// let mut cog = Cognate::new("root");
     /// assert_eq!(cog.len(), 0);
     /// assert_eq!(cog.rules_count(), 0);
     ///
-    /// cog.group_from_rules(&[Rule::new("<A>"), Rule::new("A <B>")]).unwrap();
+    /// cog.group_from_rules(&["<A>", "A <B>"]).unwrap();
     ///
     /// assert_eq!(cog.len(), 1);
     /// assert_eq!(cog.rules_count(), 2);
@@ -91,11 +97,14 @@ impl Cognate {
     /// to the newly-created Group.
     ///
     /// ```
-    /// let mut cog = Cognate::new();
-    /// let mut grp = cog.add_group().unwrap();
-    ///
-    /// grp.add_rule("<A>").unwrap();
-    /// grp.add_rule("A <B>").unwrap();
+    /// use annals::cognate::Cognate;
+    /// 
+    /// let mut cog = Cognate::new("root");
+    /// {
+    ///     let mut grp = cog.add_group().unwrap();
+    ///     grp.add_rule("<A>").unwrap();
+    ///     grp.add_rule("A <B>").unwrap();
+    /// }
     ///
     /// assert_eq!(cog.len(), 1);
     /// assert_eq!(cog.rules_count(), 2);
