@@ -7,13 +7,15 @@ extern crate regex;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_yaml;
+extern crate titlecase;
 
-use failure::Error;
-use rand::prelude::*;
 use std::collections::HashMap;
 use std::fs::File;
 use std::str::FromStr;
 
+use failure::Error;
+use rand::prelude::*;
+use titlecase::titlecase;
 
 mod parse;
 pub mod cognate;
@@ -210,7 +212,8 @@ impl Scribe {
                     },
                     Command::Lowercase => self.handle_token(token, context)
                                               .and_then(|ret| Ok(ret.to_lowercase())),
-                    Command::Titlecase => self.handle_token(token, context),
+                    Command::Titlecase => self.handle_token(token, context)
+                                                .and_then(|ret| Ok(titlecase(&ret))),
                     Command::IndefiniteArticle => {
                         self.handle_token(token, context)
                             .and_then(|ret| {
@@ -257,5 +260,17 @@ impl FromStr for Scribe {
     /// Create a new Scribe from a YAML string.
     fn from_str(data: &str) -> Result<Self, Error> {
         serde_yaml::from_str(data).map_err(Into::into)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_handle_token() {
+        let scr = Scribe::new();
+        let mut ctx = Context::default();
+        let tok = Token::Expression(Command::Titlecase, Box::new(Token::Literal("the duke of york".to_owned())));
+        assert_eq!(scr.handle_token(&tok, &mut ctx), Ok("The Duke of York".to_owned()));
     }
 }
