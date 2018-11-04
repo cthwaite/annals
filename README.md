@@ -32,6 +32,23 @@ Grammars take the form of YAML documents. The following example illustrates most
     - "<@speaker>: is that <(an !animal)>? yes, it's a tiny <animal>!"
 ```
 
+To load and parse the YAML above, and then generate 10 phrases:
+
+```rust
+extern crate annals;
+
+use annals::Scribe;
+
+fn main() {}
+  let mut scribe = Scribe::default();
+  scribe.load_cognates_str(YAML_STR).unwrap();
+  let mut ctx = Context::default();
+  ctx.bind("speaker", "Bob");
+  for _i in 0..10 {
+      println!("{}", scribe.gen_with("expression", ctx.clone()).unwrap());
+  }
+```
+
 ## Rules
 
 - `<name>` will expand to any `name`
