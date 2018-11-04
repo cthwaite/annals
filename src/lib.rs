@@ -196,7 +196,7 @@ impl Scribe {
                 if let Some(bind) = context.get_binding(name) {
                     return Ok(bind);
                 }
-                Err(AnnalsFailure::UnboundVariable{ name: name.clone() }.into())
+                Err(AnnalsFailure::UnboundVariable{ name: name.clone() })
             },
             Token::Expression(cmd, token) => {
                 match cmd {
