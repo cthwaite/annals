@@ -3,7 +3,7 @@ use std::error::Error;
 use serde::de;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ParseError {
     EmptyRule,
     InternalError,
@@ -42,7 +42,7 @@ impl fmt::Display for ParseError {
 }
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AnnalsFailure {
     UnknownCognate {
         name: String,
