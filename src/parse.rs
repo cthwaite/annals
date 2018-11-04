@@ -25,7 +25,7 @@ pub enum Token {
 /// Make a Token::Literal from a string slice.
 fn make_literal(expr: &str, beg: usize, end: usize) -> Token {
     let lit = expr.get(beg..end).unwrap();
-    Token::Literal(lit.replace("\\<", "<").replace("\\>", ">").into())
+    Token::Literal(lit.replace("\\<", "<").replace("\\>", ">"))
 }
 
 
@@ -56,7 +56,7 @@ fn parse_range(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> 
         let (l_str, u_str) = expr.split_at(index);
         let lower = l_str.parse::<usize>();
         let upper = u_str[1..].parse::<usize>();
-        if !lower.is_ok() || !upper.is_ok() {
+        if lower.is_err() || upper.is_err() {
             return Err(ParseError::InvalidRange(beg, end));
         }
         return Ok(Token::Range(lower.unwrap(), upper.unwrap()));
