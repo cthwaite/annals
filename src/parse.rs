@@ -35,7 +35,7 @@ fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseErro
         return Err(ParseError::ZeroLengthSubst(beg + 1, end));
     }
     let expr = &expr[1..expr.len() - 1];
-    let (cmd_str, tok_str) = match expr.find(" ") {
+    let (cmd_str, tok_str) = match expr.find(' ') {
         Some(first_space) => expr.split_at(first_space),
         None => return Err(ParseError::InvalidExpression(beg, end))
     };
@@ -52,7 +52,7 @@ fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseErro
 
 /// Parse a range expression.
 fn parse_range(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
-    if let Some(index) = expr.find("-") {
+    if let Some(index) = expr.find('-') {
         let (l_str, u_str) = expr.split_at(index);
         let lower = l_str.parse::<usize>();
         let upper = u_str[1..].parse::<usize>();
@@ -66,7 +66,7 @@ fn parse_range(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> 
 
 
 fn parse_variable(expr: &str, _beg: usize, _end: usize) -> Result<Token, ParseError> {
-    if let Some(index) = expr.find(":") {
+    if let Some(index) = expr.find(':') {
         let (vname, ntname) = expr.split_at(index);
         Ok(Token::VariableAssignment(vname.to_string(), ntname.to_string()))
     } else {
@@ -82,7 +82,7 @@ fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Toke
     let initial = &expr[0..1];
     match initial {
         "(" => {
-            if expr.matches("(").count() != expr.matches(")").count() {
+            if expr.matches('(').count() != expr.matches(')').count() {
                 return Err(ParseError::InvalidExpression(beg, end));
             }
             parse_cmd_expr(expr, beg, end)
@@ -123,8 +123,8 @@ pub fn make_expr(expr: &str) -> Result<Vec<Token>, ParseError> {
     let mut in_subst = false;
     let mut cbeg = 0;
 
-    let lbrackets = expr.matches("<").count() - expr.matches("\\<").count();
-    let rbrackets = expr.matches(">").count() - expr.matches("\\>").count();
+    let lbrackets = expr.matches('<').count() - expr.matches("\\<").count();
+    let rbrackets = expr.matches('>').count() - expr.matches("\\>").count();
 
     if lbrackets != rbrackets {
         return Err(ParseError::UnbalancedBrackets);
