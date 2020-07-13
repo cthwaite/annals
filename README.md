@@ -1,5 +1,7 @@
 # annals
 
+![tests](https://github.com/cthwaite/annals/workflows/tests/badge.svg)
+
 annals is a library for procedurally generating text from simple grammars specified in YAML files, inspired by [tracery](https://github.com/galaxykate/tracery) and [improv](https://github.com/sequitur/improv).
 
 Grammars take the form of YAML documents. The following example illustrates most of the features of `annals` grammar. Run the `illustrative` example to see it in action.
