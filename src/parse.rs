@@ -1,6 +1,6 @@
-use error::{ParseError, AnnalsFailure};
-
 use regex::Regex;
+
+use crate::error::{AnnalsError, ParseError};
 
 #[derive(Debug, PartialEq)]
 pub enum Command {
@@ -21,13 +21,11 @@ pub enum Token {
     VariableAssignment(String, String),
 }
 
-
 /// Make a Token::Literal from a string slice.
 fn make_literal(expr: &str, beg: usize, end: usize) -> Token {
     let lit = expr.get(beg..end).unwrap();
     Token::Literal(lit.replace("\\<", "<").replace("\\>", ">"))
 }
-
 
 /// Parse a Token::Expression from a string slice.
 fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
@@ -37,14 +35,14 @@ fn parse_cmd_expr(expr: &str, beg: usize, end: usize) -> Result<Token, ParseErro
     let expr = &expr[1..expr.len() - 1];
     let (cmd_str, tok_str) = match expr.find(' ') {
         Some(first_space) => expr.split_at(first_space),
-        None => return Err(ParseError::InvalidExpression(beg, end))
+        None => return Err(ParseError::InvalidExpression(beg, end)),
     };
     let cmd = match cmd_str {
         "cap" | "capitalize" => Command::Capitalize,
         "low" | "lowercase" => Command::Lowercase,
         "title" | "titlecase" => Command::Titlecase,
         "a" | "an" => Command::IndefiniteArticle,
-        _ => return Err(ParseError::UnknownCommand(beg, beg + cmd_str.len()))
+        _ => return Err(ParseError::UnknownCommand(beg, beg + cmd_str.len())),
     };
     let tok = validate_substitution_expr(tok_str.trim(), beg + cmd_str.len(), end)?;
     Ok(Token::Expression(cmd, Box::new(tok)))
@@ -64,11 +62,13 @@ fn parse_range(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> 
     Err(ParseError::InvalidRange(beg, end))
 }
 
-
 fn parse_variable(expr: &str, _beg: usize, _end: usize) -> Result<Token, ParseError> {
     if let Some(index) = expr.find(':') {
         let (vname, ntname) = expr.split_at(index);
-        Ok(Token::VariableAssignment(vname.to_string(), ntname.to_string()))
+        Ok(Token::VariableAssignment(
+            vname.to_string(),
+            ntname.to_string(),
+        ))
     } else {
         Err(ParseError::InternalError)
     }
@@ -86,7 +86,7 @@ fn validate_substitution_expr(expr: &str, beg: usize, end: usize) -> Result<Toke
                 return Err(ParseError::InvalidExpression(beg, end));
             }
             parse_cmd_expr(expr, beg, end)
-        },
+        }
         _ => {
             if !VALIDATE_NAME.is_match(expr) {
                 return Err(ParseError::InvalidName(beg, end));
@@ -109,7 +109,7 @@ fn make_subst(expr: &str, beg: usize, end: usize) -> Result<Token, ParseError> {
     }
     match expr.get(beg..end) {
         Some(snip) => validate_substitution_expr(snip, beg, end),
-        None => Err(ParseError::InternalError)
+        None => Err(ParseError::InternalError),
     }
 }
 
@@ -118,7 +118,7 @@ pub fn make_expr(expr: &str) -> Result<Vec<Token>, ParseError> {
     if expr.is_empty() {
         return Err(ParseError::EmptyRule);
     }
-    let mut exprs : Vec<Token> = vec![];
+    let mut exprs: Vec<Token> = vec![];
 
     let mut in_subst = false;
     let mut cbeg = 0;
@@ -152,7 +152,7 @@ pub fn make_expr(expr: &str) -> Result<Vec<Token>, ParseError> {
                 cbeg = index + 1;
                 in_subst = false;
             }
-            _ => ()
+            _ => (),
         }
         prev_glyph = glyph;
     }
@@ -163,13 +163,12 @@ pub fn make_expr(expr: &str) -> Result<Vec<Token>, ParseError> {
     Ok(exprs)
 }
 
-pub fn parse(expr: &str) -> Result<Vec<Token>, AnnalsFailure> {
+pub fn parse(expr: &str) -> Result<Vec<Token>, AnnalsError> {
     match make_expr(expr) {
         Ok(tokens) => Ok(tokens),
-        Err(error) => Err(AnnalsFailure::from_invalid_rule(expr.to_string(), error))
+        Err(error) => Err(AnnalsError::from_invalid_rule(expr.to_string(), error)),
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -180,9 +179,9 @@ mod test {
             match make_expr($input) {
                 Err($err_type) => (),
                 Err(other) => assert!(false, "Unexpected error: {}", other),
-                Ok(_) => assert!(false, "Got Ok(_) instead of Err(_)!")
+                Ok(_) => assert!(false, "Got Ok(_) instead of Err(_)!"),
             }
-        }
+        };
     }
 
     macro_rules! evaluates_to {
@@ -190,39 +189,50 @@ mod test {
             for (lhs, rhs) in make_expr($input).unwrap().iter().zip($tokens.iter()) {
                 assert_eq!(lhs, rhs);
             }
-        }
+        };
     }
 
     #[test]
     fn test_expr() {
-        evaluates_to!("This is an expression with one <substitution> symbol.",
-                      [
-                           Token::Literal("This is an expression with one ".into()),
-                           Token::NonTerminal("substitution".into()),
-                           Token::Literal(" symbol.".into())
-                      ]);
+        evaluates_to!(
+            "This is an expression with one <substitution> symbol.",
+            [
+                Token::Literal("This is an expression with one ".into()),
+                Token::NonTerminal("substitution".into()),
+                Token::Literal(" symbol.".into())
+            ]
+        );
 
-        evaluates_to!("This is <(cap one)> a complex expression with <!sticky> and <@bind>!",
-                      [
-                            Token::Literal("This is ".into()),
-                            Token::Expression(Command::Capitalize,
-                                              Box::new(Token::NonTerminal("one".into()))),
-                            Token::Literal(" a complex expression with ".into()),
-                            Token::StickyNonTerminal("sticky".into()),
-                            Token::Literal(" and ".into()),
-                            Token::Binding("bind".into()),
-                            Token::Literal("!".into()),
-                      ]);
+        evaluates_to!(
+            "This is <(cap one)> a complex expression with <!sticky> and <@bind>!",
+            [
+                Token::Literal("This is ".into()),
+                Token::Expression(
+                    Command::Capitalize,
+                    Box::new(Token::NonTerminal("one".into()))
+                ),
+                Token::Literal(" a complex expression with ".into()),
+                Token::StickyNonTerminal("sticky".into()),
+                Token::Literal(" and ".into()),
+                Token::Binding("bind".into()),
+                Token::Literal("!".into()),
+            ]
+        );
     }
-
 
     #[test]
     fn test_escaped_subst() {
         let exprs = make_expr("Expr with \\<escaped brackets\\>").unwrap();
-        assert_eq!(exprs[0], Token::Literal("Expr with <escaped brackets>".into()));
+        assert_eq!(
+            exprs[0],
+            Token::Literal("Expr with <escaped brackets>".into())
+        );
 
         let exprs = make_expr("Expr with \\<\\< unbalanced escaped brackets\\>").unwrap();
-        assert_eq!(exprs[0], Token::Literal("Expr with << unbalanced escaped brackets>".into()));
+        assert_eq!(
+            exprs[0],
+            Token::Literal("Expr with << unbalanced escaped brackets>".into())
+        );
     }
 
     #[test]
@@ -230,30 +240,36 @@ mod test {
         let exprs = make_expr("<aa>").unwrap();
         assert_eq!(exprs[0], Token::NonTerminal("aa".to_string()));
 
-        evaluates_to!("<aa><bb><cc>",
-                      [
-                           Token::NonTerminal("aa".to_string()),
-                           Token::NonTerminal("bb".to_string()),
-                           Token::NonTerminal("cc".to_string())
-                      ]);
+        evaluates_to!(
+            "<aa><bb><cc>",
+            [
+                Token::NonTerminal("aa".to_string()),
+                Token::NonTerminal("bb".to_string()),
+                Token::NonTerminal("cc".to_string())
+            ]
+        );
 
-        evaluates_to!("<aa> <cc>",
-                      [
-                           Token::NonTerminal("aa".to_string()),
-                           Token::Literal(" ".to_string()),
-                           Token::NonTerminal("cc".to_string())
-                      ]);
+        evaluates_to!(
+            "<aa> <cc>",
+            [
+                Token::NonTerminal("aa".to_string()),
+                Token::Literal(" ".to_string()),
+                Token::NonTerminal("cc".to_string())
+            ]
+        );
     }
 
     #[test]
     fn test_sticky_nonterminal() {
         evaluates_to!("<!foo>", [Token::StickyNonTerminal("foo".to_string())]);
-        evaluates_to!("This is a <!sticky> nonterminal.",
-                      [
-                           Token::Literal("This is a ".to_string()),
-                           Token::StickyNonTerminal("sticky".to_string()),
-                           Token::Literal(" nonterminal.".to_string())
-                      ]);
+        evaluates_to!(
+            "This is a <!sticky> nonterminal.",
+            [
+                Token::Literal("This is a ".to_string()),
+                Token::StickyNonTerminal("sticky".to_string()),
+                Token::Literal(" nonterminal.".to_string())
+            ]
+        );
     }
 
     #[test]
@@ -270,19 +286,25 @@ mod test {
 
     #[test]
     fn test_expression() {
-        evaluates_to!("<(an animal)>",
-                      [Token::Expression(Command::IndefiniteArticle,
-                                         Box::new(Token::NonTerminal("animal".to_string())))]);
+        evaluates_to!(
+            "<(an animal)>",
+            [Token::Expression(
+                Command::IndefiniteArticle,
+                Box::new(Token::NonTerminal("animal".to_string()))
+            )]
+        );
     }
 
     #[test]
     fn test_nested_expression() {
-        let inner = Box::new(
-            Token::Expression(Command::Capitalize,
-                              Box::new(Token::NonTerminal("animal".to_string())))
+        let inner = Box::new(Token::Expression(
+            Command::Capitalize,
+            Box::new(Token::NonTerminal("animal".to_string())),
+        ));
+        evaluates_to!(
+            "<(an (cap animal))>",
+            [Token::Expression(Command::IndefiniteArticle, inner)]
         );
-        evaluates_to!("<(an (cap animal))>",
-                      [Token::Expression(Command::IndefiniteArticle, inner)]);
     }
 
     #[test]
@@ -301,8 +323,10 @@ mod test {
     #[test]
     fn test_err_zero_length() {
         should_fail_with!("Zero-length <>", ParseError::ZeroLengthSubst(13, 13));
-        should_fail_with!("Zero-length <> unaffected by post-string",
-                          ParseError::ZeroLengthSubst(13, 13));
+        should_fail_with!(
+            "Zero-length <> unaffected by post-string",
+            ParseError::ZeroLengthSubst(13, 13)
+        );
     }
 
     #[test]
@@ -316,7 +340,9 @@ mod test {
     fn test_unbalanced() {
         should_fail_with!("<<", ParseError::UnbalancedBrackets);
         should_fail_with!("<>>", ParseError::UnbalancedBrackets);
-        should_fail_with!("This is an <<unbalanced> expression", ParseError::UnbalancedBrackets)
+        should_fail_with!(
+            "This is an <<unbalanced> expression",
+            ParseError::UnbalancedBrackets
+        )
     }
 }
-

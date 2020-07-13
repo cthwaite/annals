@@ -1,36 +1,27 @@
 use std::fmt;
 use std::slice::Iter;
 
-use parse::{parse, Token};
-use error::AnnalsFailure;
-
+use crate::error::AnnalsError;
+use crate::parse::{parse, Token};
 
 #[derive(Debug, PartialEq)]
 pub struct Rule {
     literal: String,
     tokens: Vec<Token>,
-    /* TODO: probability: i32 */
 }
 
-
 impl Rule {
-    /// Create a rule from a &str.
-    pub fn new(expr: &str) -> Result<Self, AnnalsFailure> {
+    /// Create a rule from a string slice.
+    pub fn new(expr: &str) -> Result<Self, AnnalsError> {
         let literal = expr.into();
         let tokens = parse(expr)?;
-        Ok(Rule {
-            literal,
-            tokens,
-        })
+        Ok(Rule { literal, tokens })
     }
 
     /// Create a Rule by consuming a String.
-    pub fn from_string(literal: String) -> Result<Self, AnnalsFailure> {
+    pub fn from_string(literal: String) -> Result<Self, AnnalsError> {
         let tokens = parse(&literal)?;
-        Ok(Rule {
-            literal,
-            tokens,
-        })
+        Ok(Rule { literal, tokens })
     }
 
     /// Get the number of tokens in the Rule.
@@ -69,10 +60,12 @@ pub mod rule_list {
     use super::Rule;
 
     use serde::de::{Deserialize, Deserializer, Error};
-    use serde::ser::{Serializer, SerializeSeq};
+    use serde::ser::{SerializeSeq, Serializer};
 
     pub fn serialize<S>(rules: &[Rule], serializer: S) -> Result<S::Ok, S::Error>
-        where S: Serializer {
+    where
+        S: Serializer,
+    {
         let mut seq = serializer.serialize_seq(Some(rules.len()))?;
         for rule in rules.iter() {
             seq.serialize_element(&rule.literal)?;
@@ -81,12 +74,14 @@ pub mod rule_list {
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<Rule>, D::Error>
-        where D: Deserializer<'de> {
-            let literals : Vec<String> = Vec::<String>::deserialize(deserializer)?;
-            match literals.into_iter().map(Rule::from_string).collect() {
-                Ok(rules) =>  Ok(rules),
-                Err(e) => Err(e).map_err(Error::custom),
-            }
+    where
+        D: Deserializer<'de>,
+    {
+        let literals: Vec<String> = Vec::<String>::deserialize(deserializer)?;
+        match literals.into_iter().map(Rule::from_string).collect() {
+            Ok(rules) => Ok(rules),
+            Err(e) => Err(e).map_err(Error::custom),
+        }
     }
 }
 
@@ -98,7 +93,7 @@ mod test {
         macro_rules! good_rule {
             ( $literal: expr ) => {
                 assert!(Rule::new($literal).is_ok())
-            }
+            };
         }
         good_rule!("a");
         good_rule!("Hello");
@@ -113,7 +108,7 @@ mod test {
         macro_rules! bad_rule {
             ( $literal: expr ) => {
                 assert!(Rule::new($literal).is_err())
-            }
+            };
         }
         bad_rule!("");
         bad_rule!("<");

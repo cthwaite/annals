@@ -2,13 +2,12 @@
 name = "annals"
 version = "0.1.0"
 authors = ["cthwaite"]
+edition = "2018"
 
 [dependencies]
-failure = "0.1"
-lazy_static = "1.1.0"
-rand = "0.5"
-regex = "1.0.5"
-serde = "1.0"
-serde_derive = "1.0"
-serde_yaml = "0.7"
-titlecase = "0.10"
+lazy_static = "^1.4"
+rand = "^0.7"
+serde = {version = "^1.0", features = ["derive"]}
+serde_yaml = "^0.8"
+titlecase = "^1.1"
+regex = "^1.3"

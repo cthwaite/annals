@@ -1,18 +1,19 @@
-use group::Group;
-use failure::Error;
-use std::slice::Iter;
 use std::fs::File;
+use std::slice::Iter;
+
+use serde::{Deserialize, Serialize};
 use serde_yaml;
 
+use crate::error::AnnalsError;
+use crate::group::Group;
 
 /// Named collection of [`Group`](../group/struct.Group.html)s of
 /// [`Rule`](../rule/struct.Rule.html)s.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cognate {
     pub name: String,
-    groups: Vec<Group>
+    groups: Vec<Group>,
 }
-
 
 impl Cognate {
     /// Create a new Cognate with the given name.
@@ -20,16 +21,18 @@ impl Cognate {
     /// # Arguments
     /// * `name` - A string representing the name for this Cognate.
     ///
-    /// ```
-    /// 
+    /// ```ignore
     /// use annals::cognate::Cognate;
     /// // Create a new Cognate named 'root'
     /// let cog = Cognate::new("root");
     /// ```
-    pub fn new<S> (name: S) -> Self where S: Into<String> {
+    pub fn new<S>(name: S) -> Self
+    where
+        S: Into<String>,
+    {
         Cognate {
             name: name.into(),
-            groups: vec![]
+            groups: vec![],
         }
     }
 
@@ -58,12 +61,12 @@ impl Cognate {
     /// # Arguments
     /// * `path` - Path to YAML file.
     ///
-    /// ```rust,no_run
+    /// ```ignore
     /// use annals::cognate::Cognate;
-    /// 
-    /// let cog = Cognate::from_yaml("~/Documents/grammar.yml").unwrap();
+    ///
+    /// let cog = Cognate::from_yaml("~/Documents/grammar.yml")?;
     /// ```
-    pub fn from_yaml(path: &str) -> Result<Self, Error> {
+    pub fn from_yaml(path: &str) -> Result<Self, AnnalsError> {
         let f = File::open(path)?;
         serde_yaml::from_reader(f).map_err(Into::into)
     }
@@ -77,7 +80,7 @@ impl Cognate {
     ///
     /// ```
     /// use annals::{cognate::Cognate, rule::Rule};
-    /// 
+    ///
     /// let mut cog = Cognate::new("root");
     /// assert_eq!(cog.len(), 0);
     /// assert_eq!(cog.rules_count(), 0);
@@ -87,7 +90,7 @@ impl Cognate {
     /// assert_eq!(cog.len(), 1);
     /// assert_eq!(cog.rules_count(), 2);
     /// ```
-    pub fn group_from_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), Error> {
+    pub fn group_from_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), AnnalsError> {
         let grp = Group::from_rules(rules)?;
         self.groups.push(grp);
         Ok(())
@@ -98,7 +101,7 @@ impl Cognate {
     ///
     /// ```
     /// use annals::cognate::Cognate;
-    /// 
+    ///
     /// let mut cog = Cognate::new("root");
     /// {
     ///     let mut grp = cog.add_group().unwrap();

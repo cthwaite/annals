@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-use group::Group;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
+use crate::group::Group;
 
 #[derive(Clone, Debug, Default)]
 pub struct Context {
     pub tags: HashMap<String, String>,
     bindings: HashMap<String, String>,
-    unpop: VecDeque<Vec<String>>
+    unpop: VecDeque<Vec<String>>,
 }
 
 impl Context {
@@ -61,12 +60,14 @@ impl Context {
 
     /// Set the value of a tag.
     pub fn set<T: AsRef<str>>(&mut self, key: T, value: T) {
-        self.tags.insert(key.as_ref().to_string(), value.as_ref().to_string());
+        self.tags
+            .insert(key.as_ref().to_string(), value.as_ref().to_string());
     }
 
     /// Add a binding.
     pub fn bind<T: AsRef<str>>(&mut self, key: T, value: T) {
-        self.bindings.insert(key.as_ref().to_string(), value.as_ref().to_string());
+        self.bindings
+            .insert(key.as_ref().to_string(), value.as_ref().to_string());
         if let Some(vec) = self.unpop.back_mut() {
             vec.push(key.as_ref().to_string());
         }
@@ -89,9 +90,11 @@ impl Context {
 
     /// Check if a group's tags match the tags in this Context exactly.
     pub fn accept_strict(&self, group: &Group) -> bool {
-        !self.tags.iter()
-                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
-                  .any(|(ref key, val)| group.tags[*key] != **val)
+        !self
+            .tags
+            .iter()
+            .filter(|(ref key, _val)| group.tags.contains_key(*key))
+            .any(|(ref key, val)| group.tags[*key] != **val)
     }
 
     /// Check if a group's tags match the tags in this Context.
@@ -99,8 +102,10 @@ impl Context {
         if self.tags.is_empty() || group.tags.is_empty() {
             return true;
         }
-        !self.tags.iter()
-                  .filter(|(ref key, _val)| group.tags.contains_key(*key))
-                  .any(|(ref key, val)| group.tags[*key] != **val)
+        !self
+            .tags
+            .iter()
+            .filter(|(ref key, _val)| group.tags.contains_key(*key))
+            .any(|(ref key, val)| group.tags[*key] != **val)
     }
 }

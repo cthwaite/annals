@@ -1,24 +1,24 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use rule::{Rule, rule_list};
-use error::AnnalsFailure;
+
+use crate::error::AnnalsError;
+use crate::rule::{rule_list, Rule};
 
 fn always_false() -> bool {
     false
 }
 
-
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Group {
     #[serde(default)]
     note: String,
-    #[serde(default="always_false")]
+    #[serde(default = "always_false")]
     bind: bool,
     #[serde(default)]
     pub tags: HashMap<String, String>,
-    #[serde(with="rule_list")]
-    pub rules: Vec<Rule>
+    #[serde(with = "rule_list")]
+    pub rules: Vec<Rule>,
 }
-
 
 impl Group {
     /// Create a new empty group of rules.
@@ -27,7 +27,7 @@ impl Group {
             note: String::new(),
             bind: false,
             tags: HashMap::new(),
-            rules: vec![]
+            rules: vec![],
         }
     }
 
@@ -46,16 +46,14 @@ impl Group {
     /// # Arguments
     /// * `rules` - Slice of `String` or `&str` which will be parsed as `Rule`s.
     ///
-    pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, AnnalsFailure> {
-        let rules : Result<Vec<_>, _> = rules.iter()
-                                             .map(|lit| Rule::new(lit.as_ref()))
-                                             .collect();
+    pub fn from_rules<T: AsRef<str>>(rules: &[T]) -> Result<Self, AnnalsError> {
+        let rules: Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
         let rules = rules?;
         Ok(Group {
             note: String::new(),
             bind: false,
             tags: HashMap::new(),
-            rules
+            rules,
         })
     }
 
@@ -63,7 +61,7 @@ impl Group {
     /// # Arguments
     /// * `expr`: String slice to be parsed as a `Rule`.
     ///
-    pub fn add_rule(&mut self, expr: &str) -> Result<(), AnnalsFailure> {
+    pub fn add_rule(&mut self, expr: &str) -> Result<(), AnnalsError> {
         let tmp_rule = Rule::new(expr)?;
         self.rules.push(tmp_rule);
         Ok(())
@@ -74,8 +72,8 @@ impl Group {
     /// # Arguments
     /// * `rules` - Slice of `String` or `&str` which will be parsed as rules.
     ///
-    pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), AnnalsFailure> {
-        let rules : Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
+    pub fn add_rules<T: AsRef<str>>(&mut self, rules: &[T]) -> Result<(), AnnalsError> {
+        let rules: Result<Vec<_>, _> = rules.iter().map(|lit| Rule::new(lit.as_ref())).collect();
         let rules = rules?;
         self.rules.extend(rules.into_iter());
         Ok(())
@@ -92,15 +90,13 @@ impl Group {
     }
 }
 
-
 /// Iteration over each Rule in a Group.
 pub struct GroupListIter<'a> {
     groups: Vec<&'a Group>,
     t_iter: ::std::slice::Iter<'a, Rule>,
     index: usize,
-    pub size: usize
+    pub size: usize,
 }
-
 
 impl<'a> GroupListIter<'a> {
     pub fn new(groups: Vec<&'a Group>) -> Self {
@@ -110,7 +106,7 @@ impl<'a> GroupListIter<'a> {
             groups,
             t_iter,
             index: 0,
-            size
+            size,
         }
     }
 
@@ -120,12 +116,11 @@ impl<'a> GroupListIter<'a> {
             Some(group) => {
                 self.t_iter = group.rules.iter();
                 true
-            },
-            None => false
+            }
+            None => false,
         }
     }
 }
-
 
 impl<'a> Iterator for GroupListIter<'a> {
     type Item = (&'a Rule, &'a Group);
@@ -136,10 +131,10 @@ impl<'a> Iterator for GroupListIter<'a> {
                 Some(template) => {
                     self.index += 1;
                     return Some((&template, &self.groups.last().unwrap()));
-                },
+                }
                 None => {
                     if !self.advance_group() {
-                        break
+                        break;
                     }
                 }
             }
@@ -147,4 +142,3 @@ impl<'a> Iterator for GroupListIter<'a> {
         None
     }
 }
-

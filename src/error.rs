@@ -1,7 +1,6 @@
-use std::fmt::{self, Display};
-use std::error::Error;
 use serde::de;
-
+use std::error::Error;
+use std::fmt::{self, Display};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParseError {
@@ -15,88 +14,84 @@ pub enum ParseError {
     ZeroLengthSubst(usize, usize),
 }
 
-
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::EmptyRule => write!(f, "Cannot create rule from empty string!"),
             ParseError::InvalidExpression(beg, end) => {
                 write!(f, "Invalid expression ({}, {})", beg, end)
-            },
-            ParseError::InvalidName(beg, end) => {
-                write!(f, "Invalid name ({}, {})", beg, end)
-            },
+            }
+            ParseError::InvalidName(beg, end) => write!(f, "Invalid name ({}, {})", beg, end),
             ParseError::UnbalancedBrackets => write!(f, "Unbalanced brackets in expr"),
-            ParseError::UnknownCommand(beg, end) => {
-                write!(f, "Unknown command ({}, {})", beg, end)
-            },
-            ParseError::InvalidRange(beg, end) =>
-                write!(f, "Invalid range specification ({}, {})", beg, end),
+            ParseError::UnknownCommand(beg, end) => write!(f, "Unknown command ({}, {})", beg, end),
+            ParseError::InvalidRange(beg, end) => {
+                write!(f, "Invalid range specification ({}, {})", beg, end)
+            }
             ParseError::ZeroLengthSubst(beg, end) => {
                 write!(f, "Zero-length substitution expression ({}, {})", beg, end)
-            },
+            }
             // yes, unreachable... FOR NOW
-            _ => write!(f, "Unknown error!")
+            _ => write!(f, "Unknown error!"),
         }
     }
 }
 
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum AnnalsFailure {
-    UnknownCognate {
-        name: String,
-    },
-    EmptyCognate {
-        name: String,
-    },
-    NoSuitableGroups {
-        name: String,
-        context: String
-    },
-    UnknownToken {
-        content: String,
-    },
-    UnboundVariable {
-        name: String
-    },
-    SerdeError {
-        msg: String
-    },
-    InvalidRule {
-        err: ParseError,
-        expr: String
-    },
-    UnknownError
+#[derive(Debug)]
+pub enum AnnalsError {
+    UnknownCognate { name: String },
+    EmptyCognate { name: String },
+    NoSuitableGroups { name: String, context: String },
+    UnknownToken { content: String },
+    UnboundVariable { name: String },
+    SerdeError { msg: String },
+    InvalidRule { err: ParseError, expr: String },
+    IOError(std::io::Error),
+    YAMLError(serde_yaml::Error),
+    UnknownError,
 }
 
-impl AnnalsFailure {
+impl AnnalsError {
     pub fn from_invalid_rule(expr: String, err: ParseError) -> Self {
-        AnnalsFailure::InvalidRule {
-            err,
-            expr
-        }
+        AnnalsError::InvalidRule { err, expr }
+    }
+}
+
+impl std::convert::From<std::io::Error> for AnnalsError {
+    fn from(err: std::io::Error) -> Self {
+        Self::IOError(err)
+    }
+}
+impl std::convert::From<serde_yaml::Error> for AnnalsError {
+    fn from(err: serde_yaml::Error) -> Self {
+        Self::YAMLError(err)
     }
 }
 
 /// Handler for transforming de::Error.
-impl de::Error for AnnalsFailure {
+impl de::Error for AnnalsError {
     fn custom<T: Display>(msg: T) -> Self {
-        AnnalsFailure::SerdeError{msg: msg.to_string()}
+        AnnalsError::SerdeError {
+            msg: msg.to_string(),
+        }
     }
 }
 
-impl Display for AnnalsFailure {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+impl Display for AnnalsError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use AnnalsError::*;
         match self {
-            AnnalsFailure::UnknownCognate{name} => write!(formatter, "Unknown cognate: {}", name),
-            AnnalsFailure::EmptyCognate{name} => write!(formatter, "No groups in cognate: {}", name),
-            AnnalsFailure::NoSuitableGroups{name, context} => write!(formatter, "No suitable groups for {} in context: {}", name, context),
-            AnnalsFailure::UnknownToken{content} => write!(formatter, "Unknown token: {}", content),
-            AnnalsFailure::UnboundVariable{name} => write!(formatter, "Unbound variable: {}", name),
-            AnnalsFailure::SerdeError{msg} => write!(formatter, "{}", msg),
-            AnnalsFailure::InvalidRule{ err, expr } => format_invalid_rule(formatter, err, expr),
-            AnnalsFailure::UnknownError => write!(formatter, "Unknown error")
+            UnknownCognate { name } => write!(f, "Unknown cognate: {}", name),
+            EmptyCognate { name } => write!(f, "No groups in cognate: {}", name),
+            NoSuitableGroups { name, context } => {
+                write!(f, "No suitable groups for {} in context: {}", name, context)
+            }
+            UnknownToken { content } => write!(f, "Unknown token: {}", content),
+            UnboundVariable { name } => write!(f, "Unbound variable: {}", name),
+            SerdeError { msg } => write!(f, "{}", msg),
+            InvalidRule { err, expr } => format_invalid_rule(f, err, expr),
+            UnknownError => write!(f, "Unknown error"),
+            IOError(err) => write!(f, "{}", err),
+            YAMLError(err) => write!(f, "{}", err),
         }
     }
 }
@@ -115,7 +110,7 @@ fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &str) -> 
         ParseError::EmptyRule => write!(f, "{}", err),
         ParseError::InternalError => {
             write!(f, "Unknown internal error while parsing:\n    {}", expr)
-        },
+        }
         ParseError::InvalidExpression(beg, _end)
         | ParseError::InvalidName(beg, _end)
         | ParseError::InvalidRange(beg, _end)
@@ -123,17 +118,9 @@ fn format_invalid_rule(f: &mut fmt::Formatter, err: &ParseError, expr: &str) -> 
         | ParseError::ZeroLengthSubst(beg, _end) => {
             writeln!(f, "{}", expr)?;
             write!(f, "{}^-- {}", " ".repeat(*beg), err)
-        },
-        ParseError::UnbalancedBrackets => {
-            write!(f, "Unbalanced brackets in rule:\n    {}", expr)
-        },
+        }
+        ParseError::UnbalancedBrackets => write!(f, "Unbalanced brackets in rule:\n    {}", expr),
     }
 }
 
-
-impl Error for AnnalsFailure {
-    /// This is soft-deprecated, so let Display do the heavy lifting.
-    fn description(&self) -> &str {
-        "Error"
-    }
-}
+impl Error for AnnalsError {}
